@@ -3,25 +3,27 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Log Archive V17 - A6 Page Navigation</title>
+    <title>Log Archive</title>
     
     <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,600;1,400&family=Noto+Serif+KR:wght@300;400;600&family=Pretendard:wght@300;400;500;600&family=Nanum+Myeongjo:wght@400;700;800&family=Gowun+Batang:wght@400;700&family=Hahmlet:wght@300;400;600&family=Playfair+Display:ital,wght@0,400;0,600;1,400&family=Cinzel:wght@400;600&family=Dongle:wght@400;700&family=Nanum+Pen+Script&display=swap" rel="stylesheet">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
 
     <style>
+        /* 미니멀 UI를 위한 컬러 및 디자인 시스템 */
         :root {
-            --bg-body: #e5e7eb;
+            --bg-body: #f4f4f5; 
             --bg-sidebar: rgba(255, 255, 255, 0.95);
             --bg-panel: #ffffff;
-            --accent: #111827;
+            --accent: #18181b; 
             --accent-text: #ffffff;
-            --border: #e5e7eb;
-            --text-ui: #1f2937;
-            --text-muted: #6b7280;
+            --border: #e4e4e7;
+            --border-light: #f4f4f5;
+            --text-ui: #27272a;
+            --text-muted: #71717a;
             
             --paper-bg: #ffffff;
             --paper-img: none;
-            --frame-bg: #f3f4f6;
+            --frame-bg: #f4f4f5;
             --frame-img: none;
             
             --a6-w: 420px;
@@ -29,102 +31,117 @@
             --frame-pad: 0px; 
             --page-gap: 30px; 
             
-            --sidebar-width: 360px;
-            --zoom-scale: 1.4; /* 기본 화면을 좀 더 크게 확대 */
+            --sidebar-width: 340px;
+            --zoom-scale: 1.5; 
         }
 
         [data-theme="dark"] {
-            --bg-body: #111827;
-            --bg-sidebar: rgba(31, 41, 55, 0.95);
-            --bg-panel: #1f2937;
-            --accent: #f9fafb;
-            --accent-text: #111827;
-            --border: rgba(255,255,255,0.1);
-            --text-ui: #f3f4f6;
-            --text-muted: #9ca3af;
-            --frame-bg: #374151;
-            --paper-bg: #1f2937;
+            --bg-body: #09090b;
+            --bg-sidebar: rgba(24, 24, 27, 0.95);
+            --bg-panel: #18181b;
+            --accent: #fafafa;
+            --accent-text: #09090b;
+            --border: #27272a;
+            --border-light: #18181b;
+            --text-ui: #f4f4f5;
+            --text-muted: #a1a1aa;
+            --frame-bg: #27272a;
+            --paper-bg: #18181b;
         }
 
         * { margin: 0; padding: 0; box-sizing: border-box; }
-        body { font-family: 'Pretendard', sans-serif; background: var(--bg-body); display: flex; height: 100vh; overflow: hidden; color: var(--text-ui); transition: background 0.4s ease; }
+        body { font-family: 'Pretendard', sans-serif; background: var(--bg-body); display: flex; height: 100vh; overflow: hidden; color: var(--text-ui); transition: background 0.3s ease; }
         
         ::-webkit-scrollbar { width: 6px; height: 6px; }
         ::-webkit-scrollbar-track { background: transparent; }
-        ::-webkit-scrollbar-thumb { background: var(--text-muted); border-radius: 10px; opacity: 0.5; }
+        ::-webkit-scrollbar-thumb { background: var(--text-muted); border-radius: 10px; opacity: 0.3; }
 
         .sidebar {
             position: relative; width: var(--sidebar-width); height: 100vh;
             background: var(--bg-sidebar); backdrop-filter: blur(20px); border-right: 1px solid var(--border);
             display: flex; flex-direction: column; z-index: 100;
             transition: transform 0.4s cubic-bezier(0.4, 0, 0.2, 1);
-            box-shadow: 4px 0 25px rgba(0,0,0,0.05); flex-shrink: 0;
+            flex-shrink: 0; box-shadow: 2px 0 20px rgba(0,0,0,0.02);
         }
         .sidebar.collapsed { transform: translateX(-100%); position: absolute; }
 
         .toggle-btn {
-            position: absolute; right: -45px; top: 20px; width: 45px; height: 45px;
+            position: absolute; right: -40px; top: 15px; width: 40px; height: 40px;
             background: var(--bg-sidebar); border: 1px solid var(--border); border-left: none;
-            backdrop-filter: blur(20px); border-radius: 0 12px 12px 0; cursor: pointer; 
+            backdrop-filter: blur(20px); border-radius: 0 10px 10px 0; cursor: pointer; 
             display: flex; align-items: center; justify-content: center;
-            color: var(--text-ui); font-size: 1.2rem; z-index: 101;
-            box-shadow: 5px 0 10px rgba(0,0,0,0.02); transition: 0.2s;
+            color: var(--text-ui); font-size: 1.1rem; z-index: 101;
+            transition: 0.2s;
         }
-        .toggle-btn:hover { background: var(--bg-panel); }
 
-        .sidebar-header { padding: 25px 25px 15px; border-bottom: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center;}
-        .sidebar-header h1 { font-family: 'Cinzel', serif; font-size: 1.3rem; letter-spacing: 1px; font-weight: 700; }
-        .theme-btn { background: var(--bg-body); border: 1px solid var(--border); padding: 8px 12px; border-radius: 20px; cursor: pointer; color: var(--text-ui); font-size: 0.75rem; font-weight: 600; transition: 0.2s; }
-        .theme-btn:hover { background: var(--accent); color: var(--accent-text); }
+        .sidebar-header { padding: 25px 25px 15px; display: flex; justify-content: space-between; align-items: center;}
+        .sidebar-header h1 { font-family: 'Cinzel', serif; font-size: 1.2rem; letter-spacing: 0.5px; font-weight: 800; }
+        .theme-btn { background: transparent; border: 1px solid var(--border); padding: 6px 12px; border-radius: 20px; cursor: pointer; color: var(--text-ui); font-size: 0.75rem; font-weight: 500; transition: 0.2s; }
+        .theme-btn:hover { background: var(--accent); color: var(--accent-text); border-color: var(--accent); }
+        
+        .close-mobile-btn { display: none; background: none; border: none; font-size: 1.4rem; color: var(--text-ui); cursor: pointer; padding-left: 10px; }
 
-        .tabs { display: flex; border-bottom: 1px solid var(--border); background: var(--bg-panel); flex-shrink: 0; }
-        .tab { flex: 1; padding: 14px 0; font-size: 0.85rem; font-weight: 600; color: var(--text-muted); background: none; border: none; cursor: pointer; transition: 0.3s; }
-        .tab.active { color: var(--text-ui); border-bottom: 2px solid var(--accent); }
+        .tabs { display: flex; flex-shrink: 0; padding: 0 15px; border-bottom: 1px solid var(--border); }
+        .tab { flex: 1; padding: 12px 0; font-size: 0.85rem; font-weight: 600; color: var(--text-muted); background: none; border: none; cursor: pointer; transition: 0.3s; position: relative; }
+        .tab.active { color: var(--text-ui); }
+        .tab.active::after { content: ''; position: absolute; bottom: -1px; left: 10%; width: 80%; height: 2px; background: var(--accent); border-radius: 2px 2px 0 0; }
 
         .sidebar-scroll { flex: 1; overflow-y: auto; overflow-x: hidden; display: flex; flex-direction: column; }
-        .content { padding: 20px; display: none; flex-direction: column; gap: 20px; }
+        .content { padding: 20px 25px; display: none; flex-direction: column; gap: 24px; }
         .content.active { display: flex; }
         
-        .sidebar-footer { padding: 15px 20px; border-top: 1px solid var(--border); background: var(--bg-sidebar); flex-shrink: 0;}
+        .sidebar-footer { padding: 20px 25px; border-top: 1px solid var(--border); background: var(--bg-sidebar); flex-shrink: 0;}
         
-        .stats-bar { display: flex; justify-content: space-between; font-size: 0.75rem; color: var(--text-muted); margin-bottom: 10px; padding: 0 5px; font-weight: 600; }
-        .save-tools { display: flex; gap: 5px; margin-bottom: 10px; }
-        .save-tools button { flex: 1; padding: 8px; font-size: 0.75rem; border-radius: 6px; border: 1px solid var(--border); background: var(--bg-panel); color: var(--text-ui); cursor: pointer; font-weight: 600; }
-        .save-tools button:hover { background: var(--bg-body); }
+        .stats-bar { display: flex; justify-content: space-between; font-size: 0.75rem; color: var(--text-muted); margin-bottom: 15px; font-weight: 500; }
+        .save-tools { display: flex; gap: 8px; margin-bottom: 15px; }
+        .save-tools button { flex: 1; padding: 10px; font-size: 0.75rem; border-radius: 8px; border: 1px solid var(--border); background: var(--bg-panel); color: var(--text-ui); cursor: pointer; font-weight: 500; transition: 0.2s; }
+        .save-tools button:hover { border-color: var(--text-muted); }
 
-        .btn-primary { background: var(--accent); color: var(--accent-text); border: none; width: 100%; font-weight: 600; letter-spacing: 1px; padding: 14px; border-radius: 10px; cursor: pointer; transition: 0.3s; box-shadow: 0 4px 15px rgba(0,0,0,0.1); }
-        .btn-primary:hover { transform: translateY(-2px); box-shadow: 0 8px 25px rgba(0,0,0,0.15); }
+        .btn-primary { background: var(--accent); color: var(--accent-text); border: none; width: 100%; font-weight: 600; font-size: 0.85rem; padding: 14px; border-radius: 10px; cursor: pointer; transition: 0.2s; }
+        .btn-primary:hover { opacity: 0.9; transform: translateY(-1px); }
 
-        .item { display: flex; flex-direction: column; gap: 8px; }
-        .item label { font-size: 0.8rem; font-weight: 700; color: var(--text-ui); letter-spacing: -0.3px; display: flex; justify-content: space-between; align-items: center;}
+        .item { display: flex; flex-direction: column; gap: 10px; }
+        .item label { font-size: 0.8rem; font-weight: 600; color: var(--text-ui); display: flex; justify-content: space-between; align-items: baseline;}
+        .item label span { font-size: 0.7rem; color: var(--text-muted); font-weight: 400; }
         .row { display: flex; gap: 8px; align-items: center; justify-content: space-between; flex-wrap: wrap; } 
         
-        select, button:not(.tab, .toggle-btn, .theme-btn) { padding: 10px 12px; border: 1px solid var(--border); border-radius: 8px; background: var(--bg-panel); font-size: 0.8rem; color: var(--text-ui); cursor: pointer; font-family: inherit; transition: 0.2s; width: 100%; word-break: keep-all; }
-        select option { background: var(--bg-body); color: var(--text-ui); }
+        select, button:not(.tab, .toggle-btn, .theme-btn, .close-mobile-btn) { padding: 10px 14px; border: 1px solid var(--border); border-radius: 8px; background: var(--bg-panel); font-size: 0.8rem; color: var(--text-ui); cursor: pointer; font-family: inherit; transition: 0.2s; width: 100%; }
         select:focus { outline: none; border-color: var(--accent); }
-        button:hover:not(.btn-primary) { background: var(--bg-body); }
+        button:not(.btn-primary):hover { background: var(--border-light); }
 
-        .color-box { display: flex; align-items: center; gap: 8px; border: 1px solid var(--border); padding: 6px 10px; border-radius: 8px; flex: 1; background: var(--bg-panel); }
-        input[type="color"] { width: 20px; height: 20px; padding: 0; border: none; background: none; cursor: pointer; border-radius: 50%; }
-        .palette { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 4px; padding: 10px; background: var(--bg-body); border-radius: 8px; border: 1px solid var(--border); }
-        .swatch { width: 24px; height: 24px; border-radius: 50%; border: 1px solid var(--border); cursor: pointer; transition: 0.2s; box-shadow: 0 2px 5px rgba(0,0,0,0.05); user-select: none; }
-        .swatch:hover { transform: scale(1.15); }
-        .btn-add { padding: 8px; font-size: 0.75rem; background: transparent; border: 1px dashed var(--text-muted); color: var(--text-muted); font-weight: 600; margin-top: 2px;}
+        .color-box { display: flex; align-items: center; gap: 10px; border: 1px solid var(--border); padding: 8px 12px; border-radius: 8px; flex: 1; background: var(--bg-panel); }
+        input[type="color"] { width: 22px; height: 22px; padding: 0; border: none; background: none; cursor: pointer; border-radius: 50%; }
+        .palette { display: flex; flex-wrap: wrap; gap: 8px; padding-top: 5px; }
+        .swatch { width: 24px; height: 24px; border-radius: 50%; border: 1px solid var(--border); cursor: pointer; transition: 0.2s; }
+        .swatch:hover { transform: scale(1.15); border-color: var(--text-muted); }
+        .btn-add { padding: 8px; font-size: 0.75rem; background: transparent; border: 1px dashed var(--border); color: var(--text-muted); font-weight: 500; border-radius: 8px; transition: 0.2s;}
+        .btn-add:hover { border-color: var(--text-muted); color: var(--text-ui); }
         
-        .switch { position: relative; display: inline-block; width: 40px; height: 22px; flex-shrink: 0;}
+        .switch { position: relative; display: inline-block; width: 36px; height: 20px; flex-shrink: 0;}
         .switch input { opacity: 0; width: 0; height: 0; }
-        .slider { position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0; background-color: #ccc; transition: .4s; border-radius: 24px; }
-        .slider:before { position: absolute; content: ""; height: 16px; width: 16px; left: 3px; bottom: 3px; background-color: white; transition: .4s; border-radius: 50%; }
+        .slider { position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0; background-color: var(--border); transition: .3s; border-radius: 20px; }
+        .slider:before { position: absolute; content: ""; height: 14px; width: 14px; left: 3px; bottom: 3px; background-color: white; transition: .3s; border-radius: 50%; box-shadow: 0 1px 3px rgba(0,0,0,0.1);}
         input:checked + .slider { background-color: var(--accent); }
-        input:checked + .slider:before { transform: translateX(18px); }
+        input:checked + .slider:before { transform: translateX(16px); }
         .hidden { display: none !important; }
 
-        /* --- [작업 공간 및 페이지 스냅 처리] --- */
-        .workspace { flex: 1; padding: 50px; overflow-x: auto; overflow-y: hidden; display: flex; align-items: flex-start; position: relative; }
+        /* --- [작업 공간 및 페이지 정렬 완벽 개편] --- */
+        .workspace { flex: 1; overflow: auto; position: relative; scroll-behavior: smooth; }
         
+        .scroll-content { 
+            display: flex; align-items: center; /* 상하 중앙 정렬 */
+            width: max-content; margin: 0 auto; /* 좌우 완벽 중앙 정렬 (쏠림 현상 해결) */
+            min-height: 100%; padding: 50px; box-sizing: border-box; 
+        }
+
+        /* 껍데기를 만들어 스케일 변형 시에도 브라우저가 크기를 정확히 인식하게 만듦 */
+        .scale-placeholder {
+            position: relative; margin: 0 auto;
+        }
+
         .zoom-wrap { 
-            transform: scale(var(--zoom-scale)); 
-            transform-origin: left top; display: flex; margin: auto; transition: transform 0.3s ease; 
+            position: absolute; top: 0; left: 0;
+            transform: scale(var(--zoom-scale)); transform-origin: top left; display: inline-flex; transition: transform 0.3s ease; 
         }
 
         .a6-canvas { position: relative; height: var(--a6-h); display: flex; transition: width 0.3s; }
@@ -134,100 +151,106 @@
             width: var(--a6-w); height: var(--a6-h); flex-shrink: 0; padding: var(--frame-pad);
             background: var(--frame-bg); background-image: var(--frame-img);
             background-size: cover; background-position: center; 
-            box-shadow: 0 10px 30px rgba(0,0,0,0.1); transition: padding 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            box-shadow: 0 5px 25px rgba(0,0,0,0.06); transition: padding 0.3s cubic-bezier(0.4, 0, 0.2, 1);
         }
         .page-paper { 
             width: 100%; height: 100%;
             background: var(--paper-bg); background-image: var(--paper-img);
             background-size: cover; background-position: center;
-            box-shadow: inset 0 0 10px rgba(0,0,0,0.02);
         }
 
         .content-layer { position: relative; z-index: 10; display: flex; }
         .meta-layer { position: absolute; top: 0; left: 0; width: var(--a6-w); height: var(--a6-h); pointer-events: none; z-index: 20; }
         
-        /* 중앙 정렬 완벽 적용 */
+        /* 제목 및 카피라이트 레이아웃 */
         .title-box {
-            position: absolute;
-            top: calc(var(--frame-pad) + 55px); left: 0; right: 0; margin: 0 auto; /* 정확한 중앙 정렬 */
+            position: absolute; top: calc(var(--frame-pad) + 30px); left: 0; right: 0; margin: 0 auto;
             width: calc(var(--a6-w) - (var(--frame-pad) * 2)); pointer-events: auto;
             display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center;
         }
         .main-title { 
             display: block; font-family: 'Cormorant Garamond', 'Nanum Myeongjo', serif;
             font-size: 1.6rem; font-weight: 800; color: var(--text-ui); outline: none; 
-            margin: 0 auto 12px auto; letter-spacing: -1px; 
-            border-bottom: 1px solid var(--text-muted); padding-bottom: 8px; width: 75%; text-align: center !important;
+            margin: 0 auto 10px auto; letter-spacing: -1px; 
+            border-bottom: 1px solid var(--text-muted); padding-bottom: 8px; 
+            width: 100%; max-width: 80%; text-align: center !important;
         }
         [data-theme="dark"] .main-title { border-bottom: 1px solid rgba(255,255,255,0.2); }
         
         .sub-title { 
             display: block; font-family: 'Pretendard', sans-serif;
-            font-size: 0.75rem; color: var(--text-muted); outline: none; font-weight: 400; letter-spacing: 0px; text-align: center !important; width: 100%;
+            font-size: 0.75rem; color: var(--text-muted); outline: none; font-weight: 400; letter-spacing: 0px; 
+            width: 100%; text-align: center !important;
+        }
+        
+        .main-title:empty:before, .sub-title:empty:before { 
+            text-indent: 0 !important; text-align: center !important; display: block; width: 100%; 
         }
         
         .copyright-box {
-            position: absolute; bottom: calc(var(--frame-pad) + 35px); left: 0; right: 0; margin: 0 auto;
+            position: absolute; bottom: calc(var(--frame-pad) + 15px); left: 0; right: 0; margin: 0 auto;
             width: calc(var(--a6-w) - (var(--frame-pad) * 2)); text-align: center !important; pointer-events: auto;
             font-size: 0.8rem; color: var(--text-muted); outline: none;
         }
 
-        /* 글씨 크기 작게 조절하여 더 많이 들어가도록 수정 */
         .editor {
             height: calc(var(--a6-h) - (var(--frame-pad) * 2));
             width: calc(var(--a6-w) - (var(--frame-pad) * 2) - 80px); 
-            margin-top: var(--frame-pad); margin-left: calc(var(--frame-pad) + 40px); 
-            
+            margin-top: var(--frame-pad); margin-left: calc(var(--frame-pad) + 40px);
             column-width: calc(var(--a6-w) - (var(--frame-pad) * 2) - 80px);
             column-gap: calc(var(--page-gap) + (var(--frame-pad) * 2) + 80px); 
             
             box-sizing: border-box; padding-left: 0; padding-right: 0;
             outline: none; text-align: justify; white-space: pre-wrap; word-break: break-all;
-            font-size: 11.5px; /* 글씨 작게 */
-            letter-spacing: -0.5px; line-height: 1.9; color: var(--text-ui);
+            font-size: 10.5px; 
+            letter-spacing: -0.5px; line-height: 1.7;
+            color: var(--text-ui); text-indent: 1.2em;
         }
         
-        .editor { text-indent: 1.2em; }
         .editor div, .editor p { text-indent: 1.2em; margin: 0; }
+        
         [contenteditable]:empty:before { 
             content: attr(data-placeholder); color: var(--text-muted); font-style: normal; 
-            pointer-events: none; text-indent: 1.2em; display: block; font-weight: 400;
+            pointer-events: none; text-indent: inherit; display: block; font-weight: 400;
         }
 
         .page-controls {
-            position: fixed; bottom: 30px; left: calc(50% + calc(var(--sidebar-width) / 2)); transform: translateX(-50%);
+            position: fixed; bottom: 35px; left: calc(50% + calc(var(--sidebar-width) / 2)); transform: translateX(-50%);
             background: var(--bg-sidebar); backdrop-filter: blur(10px); border: 1px solid var(--border);
-            padding: 10px 25px; border-radius: 30px; display: flex; gap: 20px; align-items: center;
-            box-shadow: 0 10px 30px rgba(0,0,0,0.1); z-index: 1000; transition: left 0.4s;
+            padding: 8px 20px; border-radius: 30px; display: flex; gap: 15px; align-items: center;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.05); z-index: 1000; transition: left 0.4s;
         }
-        .page-controls button { background: none; border: none; font-size: 1.2rem; cursor: pointer; color: var(--text-ui); width: auto; padding: 0 10px; font-weight: 800; display: flex; align-items: center; }
-        .page-controls button:hover { color: var(--accent); transform: scale(1.1); }
-        #pageIndicator { font-size: 0.9rem; font-weight: 700; color: var(--text-ui); }
+        .page-controls button { background: none; border: none; font-size: 1rem; cursor: pointer; color: var(--text-muted); width: auto; padding: 0 5px; display: flex; align-items: center; transition: 0.2s;}
+        .page-controls button:hover { color: var(--accent); }
+        #pageIndicator { font-size: 0.85rem; font-weight: 600; color: var(--text-ui); min-width: 40px; text-align: center; }
 
-        /* 모바일 최적화 (잘림 방지) */
         @media (max-width: 1100px) { .page-controls { left: 50%; } }
+        @media (max-height: 800px) { .scroll-content { align-items: flex-start; } } /* 모니터가 작을 땐 상단 정렬로 잘림 방지 */
         @media (max-width: 768px) {
-            .sidebar { position: fixed; height: 100%; box-shadow: 10px 0 30px rgba(0,0,0,0.3); }
+            .sidebar { position: fixed; height: 100%; width: 100%; max-width: 360px; box-shadow: 5px 0 30px rgba(0,0,0,0.1); }
             .sidebar.collapsed { transform: translateX(-100%); }
-            .workspace { padding: 10px; align-items: flex-start; justify-content: flex-start;}
-            .zoom-wrap { transform-origin: top left; margin: 0; }
-            .toggle-btn { top: auto; bottom: 30px; box-shadow: 5px 5px 15px rgba(0,0,0,0.1); }
-            .page-controls { bottom: 85px; padding: 8px 15px; }
+            .scroll-content { padding: 20px; align-items: flex-start; margin: 0; }
+            .toggle-btn { top: auto; bottom: 35px; box-shadow: 2px 2px 10px rgba(0,0,0,0.05); border-radius: 0 8px 8px 0; }
+            .page-controls { bottom: 90px; padding: 8px 15px; }
+            .close-mobile-btn { display: block; }
         }
     </style>
 </head>
 <body>
 
-    <div class="sidebar" id="sidebar">
+    <div class="sidebar collapsed" id="sidebar">
         <button class="toggle-btn" onclick="toggleSidebar()">☰</button>
         <div class="sidebar-header">
-            <h1>LOG ARCHIVE</h1>
-            <button class="theme-btn" onclick="toggleTheme()" id="themeBtn">🌙 다크 모드</button>
+            <h1>Log Archive</h1>
+            <div style="display:flex; align-items:center; gap:8px;">
+                <button class="theme-btn" onclick="toggleTheme()" id="themeBtn">다크 모드</button>
+                <button class="close-mobile-btn" onclick="toggleSidebar()">✕</button>
+            </div>
         </div>
 
         <div class="tabs">
-            <button class="tab active" onclick="switchTab('t-design')">글씨/디자인</button>
-            <button class="tab" onclick="switchTab('t-bg')">배경/레이아웃</button>
+            <button class="tab active" onclick="switchTab('t-design')">글씨 및 꾸미기</button>
+            <button class="tab" onclick="switchTab('t-bg')">페이지 레이아웃</button>
         </div>
 
         <div class="sidebar-scroll">
@@ -255,51 +278,58 @@
                 </div>
                 
                 <div class="item">
-                    <label>글자색 <span>(꾸욱 눌러서 삭제)</span></label>
+                    <label>글자색 <span>(우클릭 또는 꾸욱 눌러 삭제)</span></label>
                     <div class="row">
                         <div class="color-box">
-                            <input type="color" id="tc" value="#111111"> <span style="font-size:0.75rem; font-weight:600;">색 선택</span>
+                            <input type="color" id="tc" value="#111111"> <span style="font-size:0.75rem; font-weight:500;">색 선택</span>
                         </div>
-                        <button onclick="applyFmt('foreColor', 'tc')" style="width:auto; font-weight:bold; background:var(--accent); color:var(--accent-text);">적용</button>
-                        <button onclick="resetTextColor()" style="width:auto; padding:10px;">초기화</button>
+                        <button onclick="applyFmt('foreColor', 'tc')" style="width:auto; font-weight:600; background:var(--accent); color:var(--accent-text); border:none;">적용</button>
+                        <button onclick="resetTextColor()" style="width:auto;">초기화</button>
                     </div>
                     <div class="palette" id="tc-favs"></div>
                     <button class="btn-add" onclick="addFav('text')">+ 현재 색상 즐겨찾기에 추가</button>
                 </div>
 
                 <div class="item">
-                    <label>형광펜 칠하기 <span>(꾸욱 눌러서 삭제)</span></label>
+                    <label>형광펜 칠하기 <span>(우클릭 또는 꾸욱 눌러 삭제)</span></label>
                     <div class="row">
                         <div class="color-box">
-                            <input type="color" id="hc" value="#fef08a"> <span style="font-size:0.75rem; font-weight:600;">색 선택</span>
+                            <input type="color" id="hc" value="#fef08a"> <span style="font-size:0.75rem; font-weight:500;">색 선택</span>
                         </div>
-                        <button onclick="applyFmt('hiliteColor', 'hc')" style="width:auto; font-weight:bold; background:var(--accent); color:var(--accent-text);">칠하기</button>
-                        <button onclick="applyFmt('hiliteColor', 'transparent')" style="width:auto; padding:10px;">지우기</button>
+                        <button onclick="applyFmt('hiliteColor', 'hc')" style="width:auto; font-weight:600; background:var(--accent); color:var(--accent-text); border:none;">칠하기</button>
+                        <button onclick="applyFmt('hiliteColor', 'transparent')" style="width:auto;">지우기</button>
                     </div>
                     <div class="palette" id="hc-favs"></div>
-                    <button class="btn-add" onclick="addFav('hl')">+ 현재 형광펜 즐겨찾기에 추가</button>
+                    <button class="btn-add" onclick="addFav('hl')">+ 현재 색상 즐겨찾기에 추가</button>
                 </div>
 
-                <div class="row" style="display:grid; grid-template-columns: 1fr 1fr 1fr; gap:6px;">
-                    <button onclick="applyFmt('bold', null)" style="font-weight:800;">굵게</button>
-                    <button onclick="applyFmt('italic', null)" style="font-style:italic;">기울임</button>
-                    <button onclick="applyFmt('underline', null)" style="text-decoration:underline;">밑줄</button>
+                <div class="item">
+                    <label>텍스트 서식 및 실행 취소</label>
+                    <div class="row" style="display:grid; grid-template-columns: 1fr 1fr 1fr; gap:6px;">
+                        <button onclick="applyFmt('bold', null)" style="font-weight:700;">굵게</button>
+                        <button onclick="applyFmt('italic', null)" style="font-style:italic;">기울임</button>
+                        <button onclick="applyFmt('underline', null)" style="text-decoration:underline;">밑줄</button>
+                    </div>
+                    <div class="row" style="display:grid; grid-template-columns: 1fr 1fr; gap:6px; margin-top:2px;">
+                        <button onclick="document.execCommand('undo')" style="font-weight:500; font-size:0.75rem;">↩ 뒤로가기</button>
+                        <button onclick="document.execCommand('redo')" style="font-weight:500; font-size:0.75rem;">앞으로가기 ↪</button>
+                    </div>
                 </div>
             </div>
 
             <div id="t-bg" class="content">
                 <div class="item">
                     <label>A6 용지 방향</label>
-                    <div class="row" style="background:var(--bg-panel); border:1px solid var(--border); border-radius:8px; padding:4px;">
-                        <button id="btnP" style="border:none; background:var(--bg-body); font-weight:700;" onclick="setMode('P')">세로형</button>
+                    <div class="row" style="background:var(--bg-body); border-radius:8px; padding:4px;">
+                        <button id="btnP" style="border:none; background:var(--bg-panel); font-weight:600; box-shadow:0 1px 3px rgba(0,0,0,0.05);" onclick="setMode('P')">세로형</button>
                         <button id="btnL" style="border:none; background:transparent;" onclick="setMode('L')">가로형</button>
                     </div>
                 </div>
 
                 <div class="item" style="margin-top:10px;">
                     <label>바깥 액자 프레임 넣기</label>
-                    <div class="row" style="background:var(--bg-panel); border:1px solid var(--border); padding:12px 15px; border-radius:8px;">
-                        <span style="font-size:0.8rem; font-weight:500;">프레임 켜면 글씨가 안으로 들어갑니다.</span>
+                    <div class="row" style="padding:10px 0;">
+                        <span style="font-size:0.75rem; color:var(--text-muted);">활성화 시 글씨가 안으로 들어갑니다.</span>
                         <label class="switch">
                             <input type="checkbox" id="chkFrame" onchange="updateLayout()">
                             <span class="slider"></span>
@@ -307,40 +337,38 @@
                     </div>
                 </div>
 
-                <div class="item" style="margin-top:10px;">
-                    <label>안쪽 종이 배경 (글씨가 써지는 곳)</label>
+                <div class="item">
+                    <label>안쪽 종이 배경 설정</label>
                     <div class="row">
-                        <input type="color" onchange="setBg('paper', this.value, 'none')" value="#ffffff" style="width:45px; height:40px; padding:0; border-radius:6px; cursor:pointer;">
+                        <input type="color" onchange="setBg('paper', this.value, 'none')" value="#ffffff" style="width:40px; height:40px; padding:0; border-radius:8px; cursor:pointer;">
                         <button onclick="document.getElementById('pImg').click()">이미지 업로드</button>
                         <input type="file" id="pImg" class="hidden" accept="image/*" onchange="handleImg(event, 'paper')">
-                        <button onclick="setBg('paper', '#ffffff', 'none')" style="width:auto; font-weight:bold;">리셋</button>
+                        <button onclick="setBg('paper', '#ffffff', 'none')" style="width:auto;">리셋</button>
                     </div>
                 </div>
 
                 <div id="frameBgConfig" class="item hidden" style="margin-top:10px;">
-                    <label>바깥 프레임 배경 (그라데이션 지원)</label>
+                    <label>바깥 프레임 배경 설정</label>
                     <div class="row">
-                        <input type="color" onchange="document.getElementById('fTextBg').value=''; setBg('frame', this.value, 'none')" value="#f3f4f6" style="width:45px; height:40px; padding:0; border-radius:6px; cursor:pointer;">
-                        <input type="text" id="fTextBg" placeholder="CSS 입력 (예: linear-gradient(...))" style="flex:1; padding:10px; font-size:0.75rem;" onchange="setBg('frame', this.value, 'none')">
+                        <input type="color" onchange="document.getElementById('fTextBg').value=''; setBg('frame', this.value, 'none')" value="#f4f4f5" style="width:40px; height:40px; padding:0; border-radius:8px; cursor:pointer;">
+                        <input type="text" id="fTextBg" placeholder="CSS (예: linear-gradient(...))" style="flex:1; padding:10px; font-size:0.75rem; border:1px solid var(--border); border-radius:8px; background:var(--bg-panel); color:var(--text-ui);" onchange="setBg('frame', this.value, 'none')">
                     </div>
-                    <div class="row" style="margin-top:5px;">
+                    <div class="row" style="margin-top:2px;">
                         <button onclick="document.getElementById('fImg').click()">이미지 업로드</button>
                         <input type="file" id="fImg" class="hidden" accept="image/*" onchange="handleImg(event, 'frame')">
-                        <button onclick="document.getElementById('fTextBg').value=''; setBg('frame', '#f3f4f6', 'none')" style="width:auto; font-weight:bold;">리셋</button>
+                        <button onclick="document.getElementById('fTextBg').value=''; setBg('frame', '#f4f4f5', 'none')" style="width:auto;">리셋</button>
                     </div>
                 </div>
 
-                <div class="item" style="margin-top:10px;">
-                    <label>상하단 정보 (제목 / 카피라이트)</label>
-                    <div style="background:var(--bg-panel); border:1px solid var(--border); padding:15px; border-radius:8px; display:flex; flex-direction:column; gap:15px;">
-                        <div class="row">
-                            <span style="font-size:0.8rem; font-weight:500;">상단 제목란 보이기</span>
-                            <label class="switch"><input type="checkbox" id="chkTitle" checked onchange="updateLayout()"><span class="slider"></span></label>
-                        </div>
-                        <div class="row">
-                            <span style="font-size:0.8rem; font-weight:500;">하단 카피라이트 보이기</span>
-                            <label class="switch"><input type="checkbox" id="chkCopy" checked onchange="updateLayout()"><span class="slider"></span></label>
-                        </div>
+                <div class="item" style="margin-top:15px; border-top:1px dashed var(--border); padding-top:20px;">
+                    <label style="margin-bottom: 15px;">상하단 텍스트 정보</label>
+                    <div class="row">
+                        <span style="font-size:0.8rem;">상단 제목란 보이기</span>
+                        <label class="switch"><input type="checkbox" id="chkTitle" checked onchange="updateLayout()"><span class="slider"></span></label>
+                    </div>
+                    <div class="row" style="margin-top: 10px;">
+                        <span style="font-size:0.8rem;">하단 카피라이트 보이기</span>
+                        <label class="switch"><input type="checkbox" id="chkCopy" checked onchange="updateLayout()"><span class="slider"></span></label>
                     </div>
                 </div>
             </div>
@@ -348,32 +376,36 @@
         
         <div class="sidebar-footer">
             <div class="stats-bar">
-                <span>📝 공백 제외: <span id="charCount" style="color:var(--accent);">0</span>자</span>
-                <span>📄 예상: <span id="pageCount" style="color:var(--accent);">1</span>p</span>
+                <span>공백 제외: <span id="charCount" style="color:var(--text-ui); font-weight:700;">0</span>자</span>
+                <span>총 <span id="pageCount" style="color:var(--text-ui); font-weight:700;">1</span>페이지</span>
             </div>
             <div class="save-tools">
                 <button onclick="saveManual()">수동저장</button>
                 <button onclick="loadManual()">불러오기</button>
-                <button onclick="clearManual()" style="color:#dc2626;">초기화</button>
+                <button onclick="clearManual()" style="color:#ef4444;">초기화</button>
             </div>
-            <button class="btn-primary" onclick="exportA6()">A6 고화질 자동 분할 저장</button>
+            <button class="btn-primary" onclick="exportA6()">자동 분할 저장하기</button>
         </div>
     </div>
 
     <div class="workspace" id="workspace">
-        <div class="zoom-wrap">
-            <div class="a6-canvas" id="canvas">
-                <div class="bg-layer" id="bgLayer"></div>
-                <div class="content-layer">
-                    <div class="meta-layer">
-                        <div class="title-box" id="title-box">
-                            <div class="main-title" id="mainTitle" contenteditable="true" data-placeholder="Title"></div>
-                            <div class="sub-title" contenteditable="true" data-placeholder="Written by Name"></div>
+        <div id="scrollContent" class="scroll-content">
+            <div id="scalePlaceholder" class="scale-placeholder">
+                <div class="zoom-wrap">
+                    <div class="a6-canvas" id="canvas">
+                        <div class="bg-layer" id="bgLayer"></div>
+                        <div class="content-layer">
+                            <div class="meta-layer">
+                                <div class="title-box" id="title-box">
+                                    <div class="main-title" id="mainTitle" contenteditable="true" data-placeholder="Title"></div>
+                                    <div class="sub-title" contenteditable="true" data-placeholder="Written by Name"></div>
+                                </div>
+                                <div class="copyright-box" id="copyright-box" contenteditable="true"><b>Pair Name:</b> <span style="font-weight:400;">Character A × Character B</span></div>
+                            </div>
+                            
+                            <div class="editor" id="editor" contenteditable="true" data-placeholder="이곳을 클릭하여 글을 작성하세요. 복사 붙여넣기 시 텍스트 서식이 자동으로 제거됩니다."></div>
                         </div>
-                        <div class="copyright-box" id="copyright-box" contenteditable="true"><b>Pair Name:</b> <span style="font-weight:400;">Character A × Character B</span></div>
                     </div>
-                    
-                    <div class="editor" id="editor" contenteditable="true" data-placeholder="이곳을 클릭하여 글을 작성하세요. 복사 붙여넣기 시 텍스트만 가져옵니다."></div>
                 </div>
             </div>
         </div>
@@ -391,11 +423,14 @@
         const bgLayer = document.getElementById('bgLayer');
         const sidebar = document.getElementById('sidebar');
         const workspace = document.getElementById('workspace');
+        const scrollContent = document.getElementById('scrollContent');
+        const scalePlaceholder = document.getElementById('scalePlaceholder');
+        
         let isL = false;
         let currentPageIndex = 0;
 
-        let favTC = JSON.parse(localStorage.getItem('a6_v16_tc')) || ['#111111', '#8b0000', '#1e3a8a'];
-        let favHC = JSON.parse(localStorage.getItem('a6_v16_hc')) || ['#fef08a', '#bbf7d0', '#fbcfe8'];
+        let favTC = JSON.parse(localStorage.getItem('a6_v20_tc')) || ['#111111', '#8b0000', '#1e3a8a'];
+        let favHC = JSON.parse(localStorage.getItem('a6_v20_hc')) || ['#fef08a', '#bbf7d0', '#fbcfe8'];
 
         window.onload = () => { 
             updateTypo();
@@ -406,28 +441,31 @@
             const saved = localStorage.getItem('a6_content_auto');
             if(saved) editor.innerHTML = saved;
             
+            if (window.innerWidth >= 768) {
+                sidebar.classList.remove('collapsed');
+            }
+            
             calcZoomScale(); 
             checkPages(); 
             updateStats();
         };
 
-        // 모바일 비율 맞춤 및 데스크탑 확대 로직
         function calcZoomScale() {
             const w = window.innerWidth;
             if (w <= 768) {
                 const a6Width = isL ? 595 : 420;
-                const scale = (w - 20) / a6Width; // 좌우 10px씩 여백
+                const scale = (w - 40) / a6Width; 
                 root.style.setProperty('--zoom-scale', scale);
             } else {
-                root.style.setProperty('--zoom-scale', 1.4); // 기존 1.25에서 1.4로 확대
+                root.style.setProperty('--zoom-scale', 1.5);
             }
+            setTimeout(checkPages, 50);
         }
         
         function getScale() {
-            return parseFloat(getComputedStyle(root).getPropertyValue('--zoom-scale')) || 1.4;
+            return parseFloat(getComputedStyle(root).getPropertyValue('--zoom-scale')) || 1.5;
         }
 
-        // 복사 붙여넣기 시 오직 순수 텍스트만 가져오기 (이미지/서식 차단)
         document.querySelectorAll('[contenteditable="true"]').forEach(el => {
             el.addEventListener('paste', (e) => {
                 e.preventDefault();
@@ -437,7 +475,6 @@
         });
 
         function updatePageIndicator() {
-            const w = isL ? 595 : 420;
             const gap = 30; 
             const cw = editor.clientWidth;
             const cg = gap + (document.getElementById('chkFrame').checked ? 60 : 0) + 80;
@@ -452,18 +489,14 @@
             const gap = 30;
             const scale = getScale();
             const scaledWidth = (w + gap) * scale;
-            const padLeft = window.innerWidth <= 768 ? 10 : 50;
-            workspace.scrollTo({ left: (index * scaledWidth) + (index > 0 ? padLeft : 0), behavior: 'smooth' });
+            
+            workspace.scrollTo({ left: (index * scaledWidth), behavior: 'smooth' });
             currentPageIndex = index;
             updatePageIndicator();
         }
 
-        function prevPage() {
-            if (currentPageIndex > 0) scrollToPage(currentPageIndex - 1);
-        }
-
+        function prevPage() { if (currentPageIndex > 0) scrollToPage(currentPageIndex - 1); }
         function nextPage() {
-            const w = isL ? 595 : 420;
             const gap = 30;
             const cw = editor.clientWidth;
             const cg = gap + (document.getElementById('chkFrame').checked ? 60 : 0) + 80;
@@ -506,7 +539,8 @@
             const scaledWidth = (w + gap) * scale;
             const scrollLeft = workspace.scrollLeft;
             
-            let newIndex = Math.round(scrollLeft / scaledWidth);
+            let newIndex = Math.round(Math.max(0, scrollLeft) / scaledWidth);
+            
             if(newIndex !== currentPageIndex) {
                 currentPageIndex = newIndex;
                 updatePageIndicator();
@@ -516,10 +550,10 @@
         editor.addEventListener('input', () => {
             localStorage.setItem('a6_content_auto', editor.innerHTML);
             updateStats();
-            checkPages(); // 💡 중요: 텍스트 입력으로 페이지가 늘어나면 즉시 배경종이 생성 감지
+            checkPages(); 
             setTimeout(scrollToCursor, 100); 
         });
-        
+
         editor.addEventListener('keyup', (e) => {
             if(['ArrowRight', 'ArrowLeft', 'ArrowDown', 'ArrowUp', 'Enter'].includes(e.key)) {
                 setTimeout(scrollToCursor, 50);
@@ -533,10 +567,7 @@
             document.getElementById('charCount').innerText = chars;
         }
 
-        function saveManual() {
-            localStorage.setItem('a6_content_manual', editor.innerHTML);
-            alert("수동 저장되었습니다.");
-        }
+        function saveManual() { localStorage.setItem('a6_content_manual', editor.innerHTML); alert("수동 저장되었습니다."); }
         function loadManual() {
             const saved = localStorage.getItem('a6_content_manual');
             if(saved) { editor.innerHTML = saved; updateStats(); checkPages(); }
@@ -544,10 +575,8 @@
         }
         function clearManual() {
             if(confirm("에디터 내용을 모두 지우시겠습니까?")) {
-                editor.innerHTML = '';
-                localStorage.removeItem('a6_content_auto');
-                updateStats(); checkPages();
-                scrollToPage(0);
+                editor.innerHTML = ''; localStorage.removeItem('a6_content_auto');
+                updateStats(); checkPages(); scrollToPage(0);
             }
         }
 
@@ -555,10 +584,10 @@
             const isDark = root.getAttribute('data-theme') === 'dark';
             if(isDark) {
                 root.removeAttribute('data-theme');
-                document.getElementById('themeBtn').innerText = '🌙 다크 모드';
+                document.getElementById('themeBtn').innerText = '다크 모드';
             } else {
                 root.setAttribute('data-theme', 'dark');
-                document.getElementById('themeBtn').innerText = '☀️ 라이트 모드';
+                document.getElementById('themeBtn').innerText = '라이트 모드';
             }
         }
 
@@ -579,9 +608,8 @@
             }
         }
         
-        window.addEventListener('resize', handleResize);
-        function handleResize() {
-            calcZoomScale(); // 리사이즈 시 동적 스케일 적용
+        window.addEventListener('resize', () => {
+            calcZoomScale();
             const controls = document.querySelector('.page-controls');
             if (window.innerWidth < 1100) {
                 sidebar.classList.add('collapsed');
@@ -591,7 +619,7 @@
                 controls.style.left = 'calc(50% + calc(var(--sidebar-width) / 2))';
             }
             scrollToPage(currentPageIndex);
-        }
+        });
 
         function updateLayout() {
             const hasFrame = document.getElementById('chkFrame').checked;
@@ -608,20 +636,16 @@
 
             const tBox = document.getElementById('title-box');
             if(hasTitle) {
-                tBox.classList.remove('hidden');
-                editor.style.paddingTop = '160px'; 
+                tBox.classList.remove('hidden'); editor.style.paddingTop = '110px'; 
             } else {
-                tBox.classList.add('hidden');
-                editor.style.paddingTop = '50px';
+                tBox.classList.add('hidden'); editor.style.paddingTop = '30px';
             }
 
             const cBox = document.getElementById('copyright-box');
             if(hasCopy) {
-                cBox.classList.remove('hidden');
-                editor.style.paddingBottom = '80px';
+                cBox.classList.remove('hidden'); editor.style.paddingBottom = '45px';
             } else {
-                cBox.classList.add('hidden');
-                editor.style.paddingBottom = '50px';
+                cBox.classList.add('hidden'); editor.style.paddingBottom = '20px';
             }
             
             setTimeout(checkPages, 50);
@@ -629,22 +653,19 @@
 
         function setMode(m) {
             isL = (m === 'L');
-            document.getElementById('btnP').style.background = isL ? 'transparent' : 'var(--bg-body)';
-            document.getElementById('btnP').style.fontWeight = isL ? '500' : '700';
-            document.getElementById('btnL').style.background = isL ? 'var(--bg-body)' : 'transparent';
-            document.getElementById('btnL').style.fontWeight = isL ? '700' : '500';
+            document.getElementById('btnP').style.background = isL ? 'transparent' : 'var(--bg-panel)';
+            document.getElementById('btnP').style.boxShadow = isL ? 'none' : '0 1px 3px rgba(0,0,0,0.05)';
+            document.getElementById('btnL').style.background = isL ? 'var(--bg-panel)' : 'transparent';
+            document.getElementById('btnL').style.boxShadow = isL ? '0 1px 3px rgba(0,0,0,0.05)' : 'none';
             
             root.style.setProperty('--a6-w', isL ? '595px' : '420px');
             root.style.setProperty('--a6-h', isL ? '420px' : '595px');
             
-            calcZoomScale(); // 모드 전환시 스케일 재계산
+            calcZoomScale(); 
             setTimeout(() => { checkPages(); scrollToPage(0); }, 100);
         }
 
-        function updateTypo() { 
-            const font = document.getElementById('fontSel').value;
-            editor.style.fontFamily = font;
-        }
+        function updateTypo() { editor.style.fontFamily = document.getElementById('fontSel').value; }
 
         function applyFmt(cmd, id) {
             let val = id === 'transparent' ? 'transparent' : (id ? document.getElementById(id).value : null);
@@ -660,28 +681,22 @@
         function resetTextColor() {
             document.execCommand('styleWithCSS', false, true);
             const isDark = root.getAttribute('data-theme') === 'dark';
-            document.execCommand('foreColor', false, isDark ? '#f3f4f6' : '#1f2937');
+            document.execCommand('foreColor', false, isDark ? '#f4f4f5' : '#27272a');
             editor.focus();
         }
 
-        // 터치 & 마우스 길게 누르기(꾸욱) 이벤트 연결 함수
         function bindLongPress(el, type, color) {
             let pressTimer;
             const start = (e) => {
-                if (e.type === 'mousedown' && e.button !== 0) return; // 좌클릭만 허용
+                if (e.type === 'mousedown' && e.button !== 0) return; 
                 pressTimer = setTimeout(() => { deleteFav(type, color); }, 600);
             };
             const cancel = () => { clearTimeout(pressTimer); };
             
-            el.addEventListener('mousedown', start);
-            el.addEventListener('touchstart', start);
+            el.addEventListener('mousedown', start); el.addEventListener('touchstart', start);
+            el.addEventListener('mouseup', cancel); el.addEventListener('mouseleave', cancel);
+            el.addEventListener('touchend', cancel); el.addEventListener('touchmove', cancel);
             
-            el.addEventListener('mouseup', cancel);
-            el.addEventListener('mouseleave', cancel);
-            el.addEventListener('touchend', cancel);
-            el.addEventListener('touchmove', cancel);
-            
-            // 기존 PC용 우클릭 삭제도 유지
             el.oncontextmenu = (e) => { e.preventDefault(); deleteFav(type, color); };
         }
 
@@ -690,27 +705,25 @@
             const hcBox = document.getElementById('hc-favs'); hcBox.innerHTML = '';
             
             favTC.forEach(c => {
-                let div = document.createElement('div'); div.className = 'swatch'; div.style.background = c; div.title = "꾸욱 눌러서 삭제";
+                let div = document.createElement('div'); div.className = 'swatch'; div.style.background = c; div.title = "우클릭 또는 꾸욱 눌러서 삭제";
                 div.onclick = () => { document.getElementById('tc').value = c; applyFmt('foreColor', 'tc'); };
-                bindLongPress(div, 'text', c);
-                tcBox.appendChild(div);
+                bindLongPress(div, 'text', c); tcBox.appendChild(div);
             });
             
             favHC.forEach(c => {
-                let div = document.createElement('div'); div.className = 'swatch'; div.style.background = c; div.title = "꾸욱 눌러서 삭제";
+                let div = document.createElement('div'); div.className = 'swatch'; div.style.background = c; div.title = "우클릭 또는 꾸욱 눌러서 삭제";
                 div.onclick = () => { document.getElementById('hc').value = c; applyFmt('hiliteColor', 'hc'); };
-                bindLongPress(div, 'hl', c);
-                hcBox.appendChild(div);
+                bindLongPress(div, 'hl', c); hcBox.appendChild(div);
             });
         }
         
         function addFav(type) {
             if(type === 'text') {
                 let c = document.getElementById('tc').value;
-                if(!favTC.includes(c)) { favTC.push(c); localStorage.setItem('a6_v16_tc', JSON.stringify(favTC)); }
+                if(!favTC.includes(c)) { favTC.push(c); localStorage.setItem('a6_v20_tc', JSON.stringify(favTC)); }
             } else {
                 let c = document.getElementById('hc').value;
-                if(!favHC.includes(c)) { favHC.push(c); localStorage.setItem('a6_v16_hc', JSON.stringify(favHC)); }
+                if(!favHC.includes(c)) { favHC.push(c); localStorage.setItem('a6_v20_hc', JSON.stringify(favHC)); }
             }
             renderFavs();
         }
@@ -718,11 +731,9 @@
         function deleteFav(type, color) {
             if(confirm('해당 색상을 삭제하시겠습니까?')) {
                 if(type === 'text') {
-                    favTC = favTC.filter(c => c !== color);
-                    localStorage.setItem('a6_v16_tc', JSON.stringify(favTC));
+                    favTC = favTC.filter(c => c !== color); localStorage.setItem('a6_v20_tc', JSON.stringify(favTC));
                 } else {
-                    favHC = favHC.filter(c => c !== color);
-                    localStorage.setItem('a6_v16_hc', JSON.stringify(favHC));
+                    favHC = favHC.filter(c => c !== color); localStorage.setItem('a6_v20_hc', JSON.stringify(favHC));
                 }
                 renderFavs();
             }
@@ -734,34 +745,37 @@
         }
         
         function handleImg(e, target) {
-            const f = e.target.files[0];
-            if(!f) return;
+            const f = e.target.files[0]; if(!f) return;
             const reader = new FileReader();
             reader.onload = e => { setBg(target, 'transparent', e.target.result); };
-            reader.readAsDataURL(f);
-            e.target.value = '';
+            reader.readAsDataURL(f); e.target.value = '';
         }
 
         const observer = new ResizeObserver(() => checkPages());
         observer.observe(editor);
-        
+
         function checkPages() {
             const w = isL ? 595 : 420;
+            const h = isL ? 420 : 595;
             const gap = 30;
             const cw = editor.clientWidth;
             const cg = gap + (document.getElementById('chkFrame').checked ? 60 : 0) + 80;
             const pages = Math.max(1, Math.round((editor.scrollWidth + cg) / (cw + cg)));
             
-            // 💡 종이 생성 로직 수정: 텍스트 양에 맞춰 무조건 백그라운드 종이를 추가 생성하도록 보장
             while(bgLayer.children.length < pages) {
-                const p = document.createElement('div');
-                p.className = 'page-bg';
-                p.innerHTML = `<div class="page-paper"></div>`;
+                const p = document.createElement('div'); p.className = 'page-bg'; p.innerHTML = `<div class="page-paper"></div>`;
                 bgLayer.appendChild(p);
             }
             while(bgLayer.children.length > pages) bgLayer.removeChild(bgLayer.lastChild);
             
-            document.getElementById('canvas').style.width = `${pages * w + (pages > 1 ? (pages - 1) * gap : 0)}px`;
+            const unscaledWidth = pages * w + (pages > 1 ? (pages - 1) * gap : 0);
+            document.getElementById('canvas').style.width = `${unscaledWidth}px`;
+            
+            // 🔥 마법의 해결사: 스케일 된 크기만큼 투명 껍데기의 크기를 지정해줌
+            const scale = getScale();
+            scalePlaceholder.style.width = `${unscaledWidth * scale}px`;
+            scalePlaceholder.style.height = `${h * scale}px`;
+            
             updatePageIndicator();
         }
 
@@ -776,44 +790,37 @@
             const originTransform = zoomWrap.style.transform;
             zoomWrap.style.transform = 'none'; 
 
-            const originOverflow = workspace.style.overflowX;
-            workspace.style.overflowX = 'visible';
-            
-            window.scrollTo(0, 0);
-            workspace.scrollTo(0, 0);
+            // 캡처 시 레이아웃 변형 방지
+            const originPW = scalePlaceholder.style.width;
+            const originPH = scalePlaceholder.style.height;
+            scalePlaceholder.style.width = document.getElementById('canvas').style.width;
+            scalePlaceholder.style.height = `${isL ? 420 : 595}px`;
 
-            const w = isL ? 595 : 420; 
-            const h = isL ? 420 : 595;
-            const gap = 30;
+            window.scrollTo(0, 0); workspace.scrollTo(0, 0);
+
+            const w = isL ? 595 : 420; const h = isL ? 420 : 595; const gap = 30;
             const pages = bgLayer.children.length;
             const cvs = document.getElementById('canvas');
             
-            const wideCanvas = await html2canvas(cvs, { 
-                scale: 2, 
-                useCORS: true, 
-                backgroundColor: null,
-                scrollX: 0,
-                scrollY: 0
-            });
-            
+            const wideCanvas = await html2canvas(cvs, { scale: 2, useCORS: true, backgroundColor: null, scrollX: 0, scrollY: 0 });
+
             for (let i = 0; i < pages; i++) {
-                const sc = document.createElement('canvas');
-                sc.width = w * 2; sc.height = h * 2;
+                const sc = document.createElement('canvas'); sc.width = w * 2; sc.height = h * 2;
                 const ctx = sc.getContext('2d');
                 ctx.drawImage(wideCanvas, i * (w + gap) * 2, 0, w * 2, h * 2, 0, 0, w * 2, h * 2);
-                const link = document.createElement('a');
-                link.download = `Log_Archive_A6_p${i + 1}.png`;
-                link.href = sc.toDataURL('image/png');
-                link.click();
+                
+                const link = document.createElement('a'); link.download = `Log_Archive_A6_p${i + 1}.png`;
+                link.href = sc.toDataURL('image/png'); link.click();
                 
                 await new Promise(r => setTimeout(r, 450));
             }
 
-            workspace.style.overflowX = originOverflow;
             zoomWrap.style.transform = originTransform;
+            scalePlaceholder.style.width = originPW;
+            scalePlaceholder.style.height = originPH;
+            
             document.querySelector('.page-controls').style.display = 'flex';
-            btn.innerText = oTxt;
-            btn.style.pointerEvents = 'auto';
+            btn.innerText = oTxt; btn.style.pointerEvents = 'auto';
             scrollToPage(currentPageIndex);
         }
     </script>
