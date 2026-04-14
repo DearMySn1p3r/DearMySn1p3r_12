@@ -125,16 +125,15 @@
         input:checked + .slider:before { transform: translateX(16px); }
         .hidden { display: none !important; }
 
-        /* --- [작업 공간 및 페이지 정렬 완벽 개편] --- */
+        /* --- [작업 공간 및 페이지 정렬] --- */
         .workspace { flex: 1; overflow: auto; position: relative; scroll-behavior: smooth; }
         
         .scroll-content { 
-            display: flex; align-items: center; /* 상하 중앙 정렬 */
-            width: max-content; margin: 0 auto; /* 좌우 완벽 중앙 정렬 (쏠림 현상 해결) */
+            display: flex; align-items: center; 
+            width: max-content; margin: 0 auto; 
             min-height: 100%; padding: 50px; box-sizing: border-box; 
         }
 
-        /* 껍데기를 만들어 스케일 변형 시에도 브라우저가 크기를 정확히 인식하게 만듦 */
         .scale-placeholder {
             position: relative; margin: 0 auto;
         }
@@ -162,7 +161,7 @@
         .content-layer { position: relative; z-index: 10; display: flex; }
         .meta-layer { position: absolute; top: 0; left: 0; width: var(--a6-w); height: var(--a6-h); pointer-events: none; z-index: 20; }
         
-        /* 제목 및 카피라이트 레이아웃 */
+        /* 🔥 제목 및 카피라이트 레이아웃 / 색상 지정 변수 추가 / 간격 축소 */
         .title-box {
             position: absolute; top: calc(var(--frame-pad) + 30px); left: 0; right: 0; margin: 0 auto;
             width: calc(var(--a6-w) - (var(--frame-pad) * 2)); pointer-events: auto;
@@ -170,17 +169,25 @@
         }
         .main-title { 
             display: block; font-family: 'Cormorant Garamond', 'Nanum Myeongjo', serif;
-            font-size: 1.6rem; font-weight: 800; color: var(--text-ui); outline: none; 
-            margin: 0 auto 10px auto; letter-spacing: -1px; 
-            border-bottom: 1px solid var(--text-muted); padding-bottom: 8px; 
+            font-size: 1.6rem; font-weight: 800; 
+            color: var(--meta-title-color, var(--text-ui)); /* 동적 색상 */
+            outline: none; 
+            margin: 0 auto 4px auto; /* 간격 축소 */
+            letter-spacing: -1px; 
+            border-bottom: 1px solid var(--meta-sub-color, var(--text-muted)); 
+            padding-bottom: 5px; /* 간격 축소 */
             width: 100%; max-width: 80%; text-align: center !important;
+            transition: color 0.3s, border-color 0.3s;
         }
-        [data-theme="dark"] .main-title { border-bottom: 1px solid rgba(255,255,255,0.2); }
+        [data-theme="dark"] .main-title { border-bottom: 1px solid var(--meta-sub-color, rgba(255,255,255,0.2)); }
         
         .sub-title { 
             display: block; font-family: 'Pretendard', sans-serif;
-            font-size: 0.75rem; color: var(--text-muted); outline: none; font-weight: 400; letter-spacing: 0px; 
+            font-size: 0.75rem; 
+            color: var(--meta-sub-color, var(--text-muted)); /* 동적 색상 */
+            outline: none; font-weight: 400; letter-spacing: 0px; 
             width: 100%; text-align: center !important;
+            transition: color 0.3s;
         }
         
         .main-title:empty:before, .sub-title:empty:before { 
@@ -190,7 +197,10 @@
         .copyright-box {
             position: absolute; bottom: calc(var(--frame-pad) + 15px); left: 0; right: 0; margin: 0 auto;
             width: calc(var(--a6-w) - (var(--frame-pad) * 2)); text-align: center !important; pointer-events: auto;
-            font-size: 0.8rem; color: var(--text-muted); outline: none;
+            font-size: 0.8rem; 
+            color: var(--meta-sub-color, var(--text-muted)); /* 동적 색상 */
+            outline: none;
+            transition: color 0.3s;
         }
 
         .editor {
@@ -225,7 +235,7 @@
         #pageIndicator { font-size: 0.85rem; font-weight: 600; color: var(--text-ui); min-width: 40px; text-align: center; }
 
         @media (max-width: 1100px) { .page-controls { left: 50%; } }
-        @media (max-height: 800px) { .scroll-content { align-items: flex-start; } } /* 모니터가 작을 땐 상단 정렬로 잘림 방지 */
+        @media (max-height: 800px) { .scroll-content { align-items: flex-start; } }
         @media (max-width: 768px) {
             .sidebar { position: fixed; height: 100%; width: 100%; max-width: 360px; box-shadow: 5px 0 30px rgba(0,0,0,0.1); }
             .sidebar.collapsed { transform: translateX(-100%); }
@@ -315,6 +325,22 @@
                         <button onclick="document.execCommand('redo')" style="font-weight:500; font-size:0.75rem;">앞으로가기 ↪</button>
                     </div>
                 </div>
+
+                <div class="item" style="border-top:1px dashed var(--border); padding-top:15px; margin-top:5px;">
+                    <label>제목 / 보조 텍스트 색상</label>
+                    <div class="row" style="background:var(--bg-panel); border:1px solid var(--border); padding:8px 12px; border-radius:8px;">
+                        <div style="display:flex; align-items:center; gap:6px;">
+                            <input type="color" onchange="root.style.setProperty('--meta-title-color', this.value)" style="width:24px; height:24px; padding:0; border:none; background:none; cursor:pointer;" title="메인 제목 색상">
+                            <span style="font-size:0.7rem; font-weight:600;">제목</span>
+                        </div>
+                        <div style="display:flex; align-items:center; gap:6px;">
+                            <input type="color" onchange="root.style.setProperty('--meta-sub-color', this.value)" style="width:24px; height:24px; padding:0; border:none; background:none; cursor:pointer;" title="서브/카피라이트 색상">
+                            <span style="font-size:0.7rem; font-weight:600;">서브/카피</span>
+                        </div>
+                        <button onclick="root.style.removeProperty('--meta-title-color'); root.style.removeProperty('--meta-sub-color');" style="width:auto; padding:6px 10px; font-size:0.7rem;">초기화</button>
+                    </div>
+                </div>
+
             </div>
 
             <div id="t-bg" class="content">
@@ -429,8 +455,8 @@
         let isL = false;
         let currentPageIndex = 0;
 
-        let favTC = JSON.parse(localStorage.getItem('a6_v20_tc')) || ['#111111', '#8b0000', '#1e3a8a'];
-        let favHC = JSON.parse(localStorage.getItem('a6_v20_hc')) || ['#fef08a', '#bbf7d0', '#fbcfe8'];
+        let favTC = JSON.parse(localStorage.getItem('a6_v21_tc')) || ['#111111', '#8b0000', '#1e3a8a'];
+        let favHC = JSON.parse(localStorage.getItem('a6_v21_hc')) || ['#fef08a', '#bbf7d0', '#fbcfe8'];
 
         window.onload = () => { 
             updateTypo();
@@ -720,10 +746,10 @@
         function addFav(type) {
             if(type === 'text') {
                 let c = document.getElementById('tc').value;
-                if(!favTC.includes(c)) { favTC.push(c); localStorage.setItem('a6_v20_tc', JSON.stringify(favTC)); }
+                if(!favTC.includes(c)) { favTC.push(c); localStorage.setItem('a6_v21_tc', JSON.stringify(favTC)); }
             } else {
                 let c = document.getElementById('hc').value;
-                if(!favHC.includes(c)) { favHC.push(c); localStorage.setItem('a6_v20_hc', JSON.stringify(favHC)); }
+                if(!favHC.includes(c)) { favHC.push(c); localStorage.setItem('a6_v21_hc', JSON.stringify(favHC)); }
             }
             renderFavs();
         }
@@ -731,9 +757,9 @@
         function deleteFav(type, color) {
             if(confirm('해당 색상을 삭제하시겠습니까?')) {
                 if(type === 'text') {
-                    favTC = favTC.filter(c => c !== color); localStorage.setItem('a6_v20_tc', JSON.stringify(favTC));
+                    favTC = favTC.filter(c => c !== color); localStorage.setItem('a6_v21_tc', JSON.stringify(favTC));
                 } else {
-                    favHC = favHC.filter(c => c !== color); localStorage.setItem('a6_v20_hc', JSON.stringify(favHC));
+                    favHC = favHC.filter(c => c !== color); localStorage.setItem('a6_v21_hc', JSON.stringify(favHC));
                 }
                 renderFavs();
             }
@@ -771,7 +797,6 @@
             const unscaledWidth = pages * w + (pages > 1 ? (pages - 1) * gap : 0);
             document.getElementById('canvas').style.width = `${unscaledWidth}px`;
             
-            // 🔥 마법의 해결사: 스케일 된 크기만큼 투명 껍데기의 크기를 지정해줌
             const scale = getScale();
             scalePlaceholder.style.width = `${unscaledWidth * scale}px`;
             scalePlaceholder.style.height = `${h * scale}px`;
@@ -790,7 +815,6 @@
             const originTransform = zoomWrap.style.transform;
             zoomWrap.style.transform = 'none'; 
 
-            // 캡처 시 레이아웃 변형 방지
             const originPW = scalePlaceholder.style.width;
             const originPH = scalePlaceholder.style.height;
             scalePlaceholder.style.width = document.getElementById('canvas').style.width;
@@ -809,7 +833,7 @@
                 const ctx = sc.getContext('2d');
                 ctx.drawImage(wideCanvas, i * (w + gap) * 2, 0, w * 2, h * 2, 0, 0, w * 2, h * 2);
                 
-                const link = document.createElement('a'); link.download = `Log_Archive_A6_p${i + 1}.png`;
+                const link = document.createElement('a'); link.download = `Log_Archive_p${i + 1}.png`;
                 link.href = sc.toDataURL('image/png'); link.click();
                 
                 await new Promise(r => setTimeout(r, 450));
