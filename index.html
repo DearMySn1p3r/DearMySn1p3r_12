@@ -320,9 +320,10 @@
                         <button onclick="applyFmt('italic', null)" style="font-style:italic;">기울임</button>
                         <button onclick="applyFmt('underline', null)" style="text-decoration:underline;">밑줄</button>
                     </div>
-                    <div class="row" style="display:grid; grid-template-columns: 1fr 1fr; gap:6px; margin-top:2px;">
+                    <div class="row" style="display:grid; grid-template-columns: 1fr 1fr 1fr; gap:6px; margin-top:2px;">
                         <button onclick="document.execCommand('undo')" style="font-weight:500; font-size:0.75rem;">↩ 뒤로가기</button>
                         <button onclick="document.execCommand('redo')" style="font-weight:500; font-size:0.75rem;">앞으로가기 ↪</button>
+                        <button onclick="toggleQuotes()" style="font-weight:700; font-size:0.75rem; color:var(--accent);" title="직선 ↔ 곡선 따옴표 변환">" ↔ “ 변환</button>
                     </div>
                 </div>
 
@@ -465,12 +466,11 @@
         let isL = false;
         let currentPageIndex = 0;
 
-        // 🔥 CSS 변수 버그를 우회하기 위해 이미지와 그라데이션 값을 직접 JS 변수에 저장합니다.
         let globalPaperBgImg = 'none';
         let globalFrameBgImg = 'none';
 
-        let favTC = JSON.parse(localStorage.getItem('a6_v25_tc')) || ['#111111', '#8b0000', '#1e3a8a'];
-        let favHC = JSON.parse(localStorage.getItem('a6_v25_hc')) || ['#fef08a', '#bbf7d0', '#fbcfe8'];
+        let favTC = JSON.parse(localStorage.getItem('a6_v26_tc')) || ['#111111', '#8b0000', '#1e3a8a'];
+        let favHC = JSON.parse(localStorage.getItem('a6_v26_hc')) || ['#fef08a', '#bbf7d0', '#fbcfe8'];
 
         window.onload = () => { 
             updateTypo();
@@ -513,6 +513,40 @@
                 document.execCommand('insertText', false, text);
             });
         });
+
+        // 🔥 스마트 따옴표 양방향 변환 함수
+        function toggleQuotes() {
+            const walker = document.createTreeWalker(editor, NodeFilter.SHOW_TEXT, null, false);
+            let node;
+            const textNodes = [];
+            let hasStraight = false;
+
+            // 직선 따옴표가 하나라도 있는지 검사
+            while ((node = walker.nextNode())) {
+                textNodes.push(node);
+                if (node.nodeValue.includes('"') || node.nodeValue.includes("'")) {
+                    hasStraight = true;
+                }
+            }
+
+            // 변환 실행 (HTML 태그를 건드리지 않고 순수 텍스트 노드만 변경)
+            textNodes.forEach(n => {
+                let val = n.nodeValue;
+                if (hasStraight) {
+                    // 직선 -> 곡선 변환
+                    val = val.replace(/(^|[\s\(\[\{<])"/g, '$1“').replace(/"/g, '”')
+                             .replace(/(^|[\s\(\[\{<])'/g, '$1‘').replace(/'/g, '’');
+                } else {
+                    // 곡선 -> 직선 변환
+                    val = val.replace(/[“”]/g, '"').replace(/[‘’]/g, "'");
+                }
+                n.nodeValue = val;
+            });
+
+            // 변경 사항 자동저장 트리거
+            localStorage.setItem('a6_content_auto', editor.innerHTML);
+            updateStats();
+        }
 
         function updatePageIndicator() {
             const gap = 30; 
@@ -760,10 +794,10 @@
         function addFav(type) {
             if(type === 'text') {
                 let c = document.getElementById('tc').value;
-                if(!favTC.includes(c)) { favTC.push(c); localStorage.setItem('a6_v25_tc', JSON.stringify(favTC)); }
+                if(!favTC.includes(c)) { favTC.push(c); localStorage.setItem('a6_v26_tc', JSON.stringify(favTC)); }
             } else {
                 let c = document.getElementById('hc').value;
-                if(!favHC.includes(c)) { favHC.push(c); localStorage.setItem('a6_v25_hc', JSON.stringify(favHC)); }
+                if(!favHC.includes(c)) { favHC.push(c); localStorage.setItem('a6_v26_hc', JSON.stringify(favHC)); }
             }
             renderFavs();
         }
@@ -771,15 +805,14 @@
         function deleteFav(type, color) {
             if(confirm('해당 색상을 삭제하시겠습니까?')) {
                 if(type === 'text') {
-                    favTC = favTC.filter(c => c !== color); localStorage.setItem('a6_v25_tc', JSON.stringify(favTC));
+                    favTC = favTC.filter(c => c !== color); localStorage.setItem('a6_v26_tc', JSON.stringify(favTC));
                 } else {
-                    favHC = favHC.filter(c => c !== color); localStorage.setItem('a6_v25_hc', JSON.stringify(favHC));
+                    favHC = favHC.filter(c => c !== color); localStorage.setItem('a6_v26_hc', JSON.stringify(favHC));
                 }
                 renderFavs();
             }
         }
 
-        /* 🔥 핵심 해결 로직: 모든 배경과 이미지를 DOM 요소에 직접 칠해줍니다. */
         function renderBg() {
             document.querySelectorAll('.page-bg').forEach(el => {
                 el.style.backgroundImage = globalFrameBgImg;
@@ -820,8 +853,6 @@
             if(!f) return;
             const reader = new FileReader();
             reader.onload = ev => { 
-                // 투명화(transparent) 로직 삭제 -> 배경색 위에 이미지가 온전히 덮어지도록 함
-                // 거대한 Base64 이미지를 CSS 변수 대신 자바스크립트 변수로 안전하게 저장 후 직접 주입
                 if (target === 'paper') {
                     globalPaperBgImg = `url("${ev.target.result}")`;
                 } else {
@@ -873,7 +904,6 @@
             scalePlaceholder.style.width = `${unscaledWidth * scale}px`;
             scalePlaceholder.style.height = `${h * scale}px`;
             
-            // 페이지가 추가/삭제될 때마다 저장된 배경 이미지 강제 재적용
             renderBg();
             updatePageIndicator();
         }
