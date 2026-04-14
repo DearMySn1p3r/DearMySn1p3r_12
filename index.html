@@ -21,11 +21,8 @@
             --text-ui: #27272a;
             --text-muted: #71717a;
             
-            /* 배경과 이미지를 분리하여 그라데이션 호환성 확보 */
             --paper-bg-color: #ffffff;
-            --paper-bg-img: none;
             --frame-bg-color: #f4f4f5;
-            --frame-bg-img: none;
             
             --a6-w: 420px;
             --a6-h: 595px;
@@ -47,7 +44,6 @@
             --text-ui: #f4f4f5;
             --text-muted: #a1a1aa;
             
-            /* 다크모드 기본 배경색 변경 */
             --frame-bg-color: #27272a;
             --paper-bg-color: #18181b;
         }
@@ -153,7 +149,6 @@
         .page-bg { 
             width: var(--a6-w); height: var(--a6-h); flex-shrink: 0; padding: var(--frame-pad);
             background-color: var(--frame-bg-color); 
-            background-image: var(--frame-bg-img);
             background-size: cover; background-position: center; 
             box-shadow: 0 5px 25px rgba(0,0,0,0.06); transition: padding 0.3s cubic-bezier(0.4, 0, 0.2, 1);
         }
@@ -161,14 +156,12 @@
         .page-paper { 
             width: 100%; height: 100%;
             background-color: var(--paper-bg-color); 
-            background-image: var(--paper-bg-img);
             background-size: cover; background-position: center;
         }
 
         .content-layer { position: relative; z-index: 10; display: flex; }
         .meta-layer { position: absolute; top: 0; left: 0; width: var(--a6-w); height: var(--a6-h); pointer-events: none; z-index: 20; }
         
-        /* 🔥 제목 및 카피라이트 레이아웃 / 색상 지정 변수 추가 / 간격 축소 */
         .title-box {
             position: absolute; top: calc(var(--frame-pad) + 30px); left: 0; right: 0; margin: 0 auto;
             width: calc(var(--a6-w) - (var(--frame-pad) * 2)); pointer-events: auto;
@@ -472,8 +465,12 @@
         let isL = false;
         let currentPageIndex = 0;
 
-        let favTC = JSON.parse(localStorage.getItem('a6_v22_tc')) || ['#111111', '#8b0000', '#1e3a8a'];
-        let favHC = JSON.parse(localStorage.getItem('a6_v22_hc')) || ['#fef08a', '#bbf7d0', '#fbcfe8'];
+        // 🔥 CSS 변수 버그를 우회하기 위해 이미지와 그라데이션 값을 직접 JS 변수에 저장합니다.
+        let globalPaperBgImg = 'none';
+        let globalFrameBgImg = 'none';
+
+        let favTC = JSON.parse(localStorage.getItem('a6_v25_tc')) || ['#111111', '#8b0000', '#1e3a8a'];
+        let favHC = JSON.parse(localStorage.getItem('a6_v25_hc')) || ['#fef08a', '#bbf7d0', '#fbcfe8'];
 
         window.onload = () => { 
             updateTypo();
@@ -763,10 +760,10 @@
         function addFav(type) {
             if(type === 'text') {
                 let c = document.getElementById('tc').value;
-                if(!favTC.includes(c)) { favTC.push(c); localStorage.setItem('a6_v22_tc', JSON.stringify(favTC)); }
+                if(!favTC.includes(c)) { favTC.push(c); localStorage.setItem('a6_v25_tc', JSON.stringify(favTC)); }
             } else {
                 let c = document.getElementById('hc').value;
-                if(!favHC.includes(c)) { favHC.push(c); localStorage.setItem('a6_v22_hc', JSON.stringify(favHC)); }
+                if(!favHC.includes(c)) { favHC.push(c); localStorage.setItem('a6_v25_hc', JSON.stringify(favHC)); }
             }
             renderFavs();
         }
@@ -774,25 +771,35 @@
         function deleteFav(type, color) {
             if(confirm('해당 색상을 삭제하시겠습니까?')) {
                 if(type === 'text') {
-                    favTC = favTC.filter(c => c !== color); localStorage.setItem('a6_v22_tc', JSON.stringify(favTC));
+                    favTC = favTC.filter(c => c !== color); localStorage.setItem('a6_v25_tc', JSON.stringify(favTC));
                 } else {
-                    favHC = favHC.filter(c => c !== color); localStorage.setItem('a6_v22_hc', JSON.stringify(favHC));
+                    favHC = favHC.filter(c => c !== color); localStorage.setItem('a6_v25_hc', JSON.stringify(favHC));
                 }
                 renderFavs();
             }
         }
 
-        /* 🔥 배경 및 이미지 업데이트 로직 개편 (단색 및 그라데이션 완벽 지원) */
+        /* 🔥 핵심 해결 로직: 모든 배경과 이미지를 DOM 요소에 직접 칠해줍니다. */
+        function renderBg() {
+            document.querySelectorAll('.page-bg').forEach(el => {
+                el.style.backgroundImage = globalFrameBgImg;
+            });
+            document.querySelectorAll('.page-paper').forEach(el => {
+                el.style.backgroundImage = globalPaperBgImg;
+            });
+        }
+
         function updatePaperBg() {
             let top = document.getElementById('pTop').value;
             let bot = document.getElementById('pBot').value;
             if(top === bot) {
                 root.style.setProperty('--paper-bg-color', top);
-                root.style.setProperty('--paper-bg-img', 'none');
+                globalPaperBgImg = 'none';
             } else {
-                root.style.setProperty('--paper-bg-color', 'transparent');
-                root.style.setProperty('--paper-bg-img', `linear-gradient(to bottom, ${top}, ${bot})`);
+                root.style.setProperty('--paper-bg-color', top); 
+                globalPaperBgImg = `linear-gradient(to bottom, ${top}, ${bot})`;
             }
+            renderBg();
         }
         
         function updateFrameBg() {
@@ -800,35 +807,46 @@
             let bot = document.getElementById('fBot').value;
             if(top === bot) {
                 root.style.setProperty('--frame-bg-color', top);
-                root.style.setProperty('--frame-bg-img', 'none');
+                globalFrameBgImg = 'none';
             } else {
-                root.style.setProperty('--frame-bg-color', 'transparent');
-                root.style.setProperty('--frame-bg-img', `linear-gradient(to bottom, ${top}, ${bot})`);
+                root.style.setProperty('--frame-bg-color', top);
+                globalFrameBgImg = `linear-gradient(to bottom, ${top}, ${bot})`;
             }
+            renderBg();
         }
 
         function handleImg(e, target) {
-            const f = e.target.files[0]; if(!f) return;
+            const f = e.target.files[0]; 
+            if(!f) return;
             const reader = new FileReader();
             reader.onload = ev => { 
-                root.style.setProperty(`--${target}-bg-color`, 'transparent');
-                root.style.setProperty(`--${target}-bg-img`, `url(${ev.target.result})`);
+                // 투명화(transparent) 로직 삭제 -> 배경색 위에 이미지가 온전히 덮어지도록 함
+                // 거대한 Base64 이미지를 CSS 변수 대신 자바스크립트 변수로 안전하게 저장 후 직접 주입
+                if (target === 'paper') {
+                    globalPaperBgImg = `url("${ev.target.result}")`;
+                } else {
+                    globalFrameBgImg = `url("${ev.target.result}")`;
+                }
+                renderBg();
             };
-            reader.readAsDataURL(f); e.target.value = '';
+            reader.readAsDataURL(f); 
+            e.target.value = '';
         }
 
         function resetPaperBg() {
             document.getElementById('pTop').value = '#ffffff';
             document.getElementById('pBot').value = '#ffffff';
-            root.style.removeProperty('--paper-bg-color');
-            root.style.removeProperty('--paper-bg-img');
+            root.style.setProperty('--paper-bg-color', '#ffffff');
+            globalPaperBgImg = 'none';
+            renderBg();
         }
 
         function resetFrameBg() {
             document.getElementById('fTop').value = '#f4f4f5';
             document.getElementById('fBot').value = '#f4f4f5';
-            root.style.removeProperty('--frame-bg-color');
-            root.style.removeProperty('--frame-bg-img');
+            root.style.setProperty('--frame-bg-color', '#f4f4f5');
+            globalFrameBgImg = 'none';
+            renderBg();
         }
 
         const observer = new ResizeObserver(() => checkPages());
@@ -855,6 +873,8 @@
             scalePlaceholder.style.width = `${unscaledWidth * scale}px`;
             scalePlaceholder.style.height = `${h * scale}px`;
             
+            // 페이지가 추가/삭제될 때마다 저장된 배경 이미지 강제 재적용
+            renderBg();
             updatePageIndicator();
         }
 
