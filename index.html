@@ -21,10 +21,11 @@
             --text-ui: #27272a;
             --text-muted: #71717a;
             
-            --paper-bg: #ffffff;
-            --paper-img: none;
-            --frame-bg: #f4f4f5;
-            --frame-img: none;
+            /* 배경과 이미지를 분리하여 그라데이션 호환성 확보 */
+            --paper-bg-color: #ffffff;
+            --paper-bg-img: none;
+            --frame-bg-color: #f4f4f5;
+            --frame-bg-img: none;
             
             --a6-w: 420px;
             --a6-h: 595px;
@@ -45,8 +46,10 @@
             --border-light: #18181b;
             --text-ui: #f4f4f5;
             --text-muted: #a1a1aa;
-            --frame-bg: #27272a;
-            --paper-bg: #18181b;
+            
+            /* 다크모드 기본 배경색 변경 */
+            --frame-bg-color: #27272a;
+            --paper-bg-color: #18181b;
         }
 
         * { margin: 0; padding: 0; box-sizing: border-box; }
@@ -146,15 +149,19 @@
         .a6-canvas { position: relative; height: var(--a6-h); display: flex; transition: width 0.3s; }
         
         .bg-layer { position: absolute; top: 0; left: 0; height: 100%; display: flex; gap: var(--page-gap); z-index: 0; pointer-events: none; width: max-content; }
+        
         .page-bg { 
             width: var(--a6-w); height: var(--a6-h); flex-shrink: 0; padding: var(--frame-pad);
-            background: var(--frame-bg); background-image: var(--frame-img);
+            background-color: var(--frame-bg-color); 
+            background-image: var(--frame-bg-img);
             background-size: cover; background-position: center; 
             box-shadow: 0 5px 25px rgba(0,0,0,0.06); transition: padding 0.3s cubic-bezier(0.4, 0, 0.2, 1);
         }
+        
         .page-paper { 
             width: 100%; height: 100%;
-            background: var(--paper-bg); background-image: var(--paper-img);
+            background-color: var(--paper-bg-color); 
+            background-image: var(--paper-bg-img);
             background-size: cover; background-position: center;
         }
 
@@ -170,12 +177,12 @@
         .main-title { 
             display: block; font-family: 'Cormorant Garamond', 'Nanum Myeongjo', serif;
             font-size: 1.6rem; font-weight: 800; 
-            color: var(--meta-title-color, var(--text-ui)); /* 동적 색상 */
+            color: var(--meta-title-color, var(--text-ui)); 
             outline: none; 
-            margin: 0 auto 4px auto; /* 간격 축소 */
+            margin: 0 auto 4px auto; 
             letter-spacing: -1px; 
             border-bottom: 1px solid var(--meta-sub-color, var(--text-muted)); 
-            padding-bottom: 5px; /* 간격 축소 */
+            padding-bottom: 5px; 
             width: 100%; max-width: 80%; text-align: center !important;
             transition: color 0.3s, border-color 0.3s;
         }
@@ -184,7 +191,7 @@
         .sub-title { 
             display: block; font-family: 'Pretendard', sans-serif;
             font-size: 0.75rem; 
-            color: var(--meta-sub-color, var(--text-muted)); /* 동적 색상 */
+            color: var(--meta-sub-color, var(--text-muted)); 
             outline: none; font-weight: 400; letter-spacing: 0px; 
             width: 100%; text-align: center !important;
             transition: color 0.3s;
@@ -198,7 +205,7 @@
             position: absolute; bottom: calc(var(--frame-pad) + 15px); left: 0; right: 0; margin: 0 auto;
             width: calc(var(--a6-w) - (var(--frame-pad) * 2)); text-align: center !important; pointer-events: auto;
             font-size: 0.8rem; 
-            color: var(--meta-sub-color, var(--text-muted)); /* 동적 색상 */
+            color: var(--meta-sub-color, var(--text-muted)); 
             outline: none;
             transition: color 0.3s;
         }
@@ -340,7 +347,6 @@
                         <button onclick="root.style.removeProperty('--meta-title-color'); root.style.removeProperty('--meta-sub-color');" style="width:auto; padding:6px 10px; font-size:0.7rem;">초기화</button>
                     </div>
                 </div>
-
             </div>
 
             <div id="t-bg" class="content">
@@ -364,25 +370,36 @@
                 </div>
 
                 <div class="item">
-                    <label>안쪽 종이 배경 설정</label>
-                    <div class="row">
-                        <input type="color" onchange="setBg('paper', this.value, 'none')" value="#ffffff" style="width:40px; height:40px; padding:0; border-radius:8px; cursor:pointer;">
-                        <button onclick="document.getElementById('pImg').click()">이미지 업로드</button>
+                    <label>안쪽 종이 배경 설정 <span>(상/하단 다르면 그라데이션)</span></label>
+                    <div class="row" style="background:var(--bg-panel); border:1px solid var(--border); padding:8px 12px; border-radius:8px;">
+                        <div style="display:flex; align-items:center; gap:6px;">
+                            <input type="color" id="pTop" value="#ffffff" onchange="updatePaperBg()" style="width:24px; height:24px; padding:0; border:none; background:none; cursor:pointer;" title="상단 색상">
+                            <span style="font-size:0.7rem; font-weight:600;">상단</span>
+                        </div>
+                        <div style="display:flex; align-items:center; gap:6px;">
+                            <input type="color" id="pBot" value="#ffffff" onchange="updatePaperBg()" style="width:24px; height:24px; padding:0; border:none; background:none; cursor:pointer;" title="하단 색상">
+                            <span style="font-size:0.7rem; font-weight:600;">하단</span>
+                        </div>
+                        <button onclick="document.getElementById('pImg').click()" style="width:auto; padding:6px 10px; font-size:0.7rem;">이미지</button>
                         <input type="file" id="pImg" class="hidden" accept="image/*" onchange="handleImg(event, 'paper')">
-                        <button onclick="setBg('paper', '#ffffff', 'none')" style="width:auto;">리셋</button>
+                        <button onclick="resetPaperBg()" style="width:auto; padding:6px 10px; font-size:0.7rem;">리셋</button>
                     </div>
                 </div>
 
                 <div id="frameBgConfig" class="item hidden" style="margin-top:10px;">
-                    <label>바깥 프레임 배경 설정</label>
-                    <div class="row">
-                        <input type="color" onchange="document.getElementById('fTextBg').value=''; setBg('frame', this.value, 'none')" value="#f4f4f5" style="width:40px; height:40px; padding:0; border-radius:8px; cursor:pointer;">
-                        <input type="text" id="fTextBg" placeholder="CSS (예: linear-gradient(...))" style="flex:1; padding:10px; font-size:0.75rem; border:1px solid var(--border); border-radius:8px; background:var(--bg-panel); color:var(--text-ui);" onchange="setBg('frame', this.value, 'none')">
-                    </div>
-                    <div class="row" style="margin-top:2px;">
-                        <button onclick="document.getElementById('fImg').click()">이미지 업로드</button>
+                    <label>바깥 프레임 배경 설정 <span>(상/하단 다르면 그라데이션)</span></label>
+                    <div class="row" style="background:var(--bg-panel); border:1px solid var(--border); padding:8px 12px; border-radius:8px;">
+                        <div style="display:flex; align-items:center; gap:6px;">
+                            <input type="color" id="fTop" value="#f4f4f5" onchange="updateFrameBg()" style="width:24px; height:24px; padding:0; border:none; background:none; cursor:pointer;" title="상단 색상">
+                            <span style="font-size:0.7rem; font-weight:600;">상단</span>
+                        </div>
+                        <div style="display:flex; align-items:center; gap:6px;">
+                            <input type="color" id="fBot" value="#f4f4f5" onchange="updateFrameBg()" style="width:24px; height:24px; padding:0; border:none; background:none; cursor:pointer;" title="하단 색상">
+                            <span style="font-size:0.7rem; font-weight:600;">하단</span>
+                        </div>
+                        <button onclick="document.getElementById('fImg').click()" style="width:auto; padding:6px 10px; font-size:0.7rem;">이미지</button>
                         <input type="file" id="fImg" class="hidden" accept="image/*" onchange="handleImg(event, 'frame')">
-                        <button onclick="document.getElementById('fTextBg').value=''; setBg('frame', '#f4f4f5', 'none')" style="width:auto;">리셋</button>
+                        <button onclick="resetFrameBg()" style="width:auto; padding:6px 10px; font-size:0.7rem;">리셋</button>
                     </div>
                 </div>
 
@@ -455,8 +472,8 @@
         let isL = false;
         let currentPageIndex = 0;
 
-        let favTC = JSON.parse(localStorage.getItem('a6_v21_tc')) || ['#111111', '#8b0000', '#1e3a8a'];
-        let favHC = JSON.parse(localStorage.getItem('a6_v21_hc')) || ['#fef08a', '#bbf7d0', '#fbcfe8'];
+        let favTC = JSON.parse(localStorage.getItem('a6_v22_tc')) || ['#111111', '#8b0000', '#1e3a8a'];
+        let favHC = JSON.parse(localStorage.getItem('a6_v22_hc')) || ['#fef08a', '#bbf7d0', '#fbcfe8'];
 
         window.onload = () => { 
             updateTypo();
@@ -746,10 +763,10 @@
         function addFav(type) {
             if(type === 'text') {
                 let c = document.getElementById('tc').value;
-                if(!favTC.includes(c)) { favTC.push(c); localStorage.setItem('a6_v21_tc', JSON.stringify(favTC)); }
+                if(!favTC.includes(c)) { favTC.push(c); localStorage.setItem('a6_v22_tc', JSON.stringify(favTC)); }
             } else {
                 let c = document.getElementById('hc').value;
-                if(!favHC.includes(c)) { favHC.push(c); localStorage.setItem('a6_v21_hc', JSON.stringify(favHC)); }
+                if(!favHC.includes(c)) { favHC.push(c); localStorage.setItem('a6_v22_hc', JSON.stringify(favHC)); }
             }
             renderFavs();
         }
@@ -757,24 +774,61 @@
         function deleteFav(type, color) {
             if(confirm('해당 색상을 삭제하시겠습니까?')) {
                 if(type === 'text') {
-                    favTC = favTC.filter(c => c !== color); localStorage.setItem('a6_v21_tc', JSON.stringify(favTC));
+                    favTC = favTC.filter(c => c !== color); localStorage.setItem('a6_v22_tc', JSON.stringify(favTC));
                 } else {
-                    favHC = favHC.filter(c => c !== color); localStorage.setItem('a6_v21_hc', JSON.stringify(favHC));
+                    favHC = favHC.filter(c => c !== color); localStorage.setItem('a6_v22_hc', JSON.stringify(favHC));
                 }
                 renderFavs();
             }
         }
 
-        function setBg(target, color, img) {
-            root.style.setProperty(`--${target}-bg`, color);
-            root.style.setProperty(`--${target}-img`, img === 'none' ? 'none' : `url(${img})`);
+        /* 🔥 배경 및 이미지 업데이트 로직 개편 (단색 및 그라데이션 완벽 지원) */
+        function updatePaperBg() {
+            let top = document.getElementById('pTop').value;
+            let bot = document.getElementById('pBot').value;
+            if(top === bot) {
+                root.style.setProperty('--paper-bg-color', top);
+                root.style.setProperty('--paper-bg-img', 'none');
+            } else {
+                root.style.setProperty('--paper-bg-color', 'transparent');
+                root.style.setProperty('--paper-bg-img', `linear-gradient(to bottom, ${top}, ${bot})`);
+            }
         }
         
+        function updateFrameBg() {
+            let top = document.getElementById('fTop').value;
+            let bot = document.getElementById('fBot').value;
+            if(top === bot) {
+                root.style.setProperty('--frame-bg-color', top);
+                root.style.setProperty('--frame-bg-img', 'none');
+            } else {
+                root.style.setProperty('--frame-bg-color', 'transparent');
+                root.style.setProperty('--frame-bg-img', `linear-gradient(to bottom, ${top}, ${bot})`);
+            }
+        }
+
         function handleImg(e, target) {
             const f = e.target.files[0]; if(!f) return;
             const reader = new FileReader();
-            reader.onload = e => { setBg(target, 'transparent', e.target.result); };
+            reader.onload = ev => { 
+                root.style.setProperty(`--${target}-bg-color`, 'transparent');
+                root.style.setProperty(`--${target}-bg-img`, `url(${ev.target.result})`);
+            };
             reader.readAsDataURL(f); e.target.value = '';
+        }
+
+        function resetPaperBg() {
+            document.getElementById('pTop').value = '#ffffff';
+            document.getElementById('pBot').value = '#ffffff';
+            root.style.removeProperty('--paper-bg-color');
+            root.style.removeProperty('--paper-bg-img');
+        }
+
+        function resetFrameBg() {
+            document.getElementById('fTop').value = '#f4f4f5';
+            document.getElementById('fBot').value = '#f4f4f5';
+            root.style.removeProperty('--frame-bg-color');
+            root.style.removeProperty('--frame-bg-img');
         }
 
         const observer = new ResizeObserver(() => checkPages());
