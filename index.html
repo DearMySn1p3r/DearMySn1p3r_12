@@ -421,7 +421,11 @@
                 <button onclick="loadManual()">불러오기</button>
                 <button onclick="clearManual()" style="color:#ef4444;">초기화</button>
             </div>
-            <button class="btn-primary" onclick="exportA6()">자동 분할 저장하기</button>
+            
+            <div style="display:flex; gap:8px; margin-top:5px;">
+                <button id="btnExportCur" class="btn-primary" onclick="exportCurrentPage()" style="background:var(--bg-panel); color:var(--text-ui); border:1px solid var(--border); font-size:0.8rem; padding:12px;">현재 페이지만</button>
+                <button id="btnExportAll" class="btn-primary" onclick="exportAllPages()" style="font-size:0.8rem; padding:12px;">전체 자동 분할</button>
+            </div>
         </div>
     </div>
 
@@ -469,8 +473,8 @@
         let globalPaperBgImg = 'none';
         let globalFrameBgImg = 'none';
 
-        let favTC = JSON.parse(localStorage.getItem('a6_v26_tc')) || ['#111111', '#8b0000', '#1e3a8a'];
-        let favHC = JSON.parse(localStorage.getItem('a6_v26_hc')) || ['#fef08a', '#bbf7d0', '#fbcfe8'];
+        let favTC = JSON.parse(localStorage.getItem('a6_v27_tc')) || ['#111111', '#8b0000', '#1e3a8a'];
+        let favHC = JSON.parse(localStorage.getItem('a6_v27_hc')) || ['#fef08a', '#bbf7d0', '#fbcfe8'];
 
         window.onload = () => { 
             updateTypo();
@@ -514,14 +518,12 @@
             });
         });
 
-        // 🔥 스마트 따옴표 양방향 변환 함수
         function toggleQuotes() {
             const walker = document.createTreeWalker(editor, NodeFilter.SHOW_TEXT, null, false);
             let node;
             const textNodes = [];
             let hasStraight = false;
 
-            // 직선 따옴표가 하나라도 있는지 검사
             while ((node = walker.nextNode())) {
                 textNodes.push(node);
                 if (node.nodeValue.includes('"') || node.nodeValue.includes("'")) {
@@ -529,21 +531,17 @@
                 }
             }
 
-            // 변환 실행 (HTML 태그를 건드리지 않고 순수 텍스트 노드만 변경)
             textNodes.forEach(n => {
                 let val = n.nodeValue;
                 if (hasStraight) {
-                    // 직선 -> 곡선 변환
                     val = val.replace(/(^|[\s\(\[\{<])"/g, '$1“').replace(/"/g, '”')
                              .replace(/(^|[\s\(\[\{<])'/g, '$1‘').replace(/'/g, '’');
                 } else {
-                    // 곡선 -> 직선 변환
                     val = val.replace(/[“”]/g, '"').replace(/[‘’]/g, "'");
                 }
                 n.nodeValue = val;
             });
 
-            // 변경 사항 자동저장 트리거
             localStorage.setItem('a6_content_auto', editor.innerHTML);
             updateStats();
         }
@@ -794,10 +792,10 @@
         function addFav(type) {
             if(type === 'text') {
                 let c = document.getElementById('tc').value;
-                if(!favTC.includes(c)) { favTC.push(c); localStorage.setItem('a6_v26_tc', JSON.stringify(favTC)); }
+                if(!favTC.includes(c)) { favTC.push(c); localStorage.setItem('a6_v27_tc', JSON.stringify(favTC)); }
             } else {
                 let c = document.getElementById('hc').value;
-                if(!favHC.includes(c)) { favHC.push(c); localStorage.setItem('a6_v26_hc', JSON.stringify(favHC)); }
+                if(!favHC.includes(c)) { favHC.push(c); localStorage.setItem('a6_v27_hc', JSON.stringify(favHC)); }
             }
             renderFavs();
         }
@@ -805,9 +803,9 @@
         function deleteFav(type, color) {
             if(confirm('해당 색상을 삭제하시겠습니까?')) {
                 if(type === 'text') {
-                    favTC = favTC.filter(c => c !== color); localStorage.setItem('a6_v26_tc', JSON.stringify(favTC));
+                    favTC = favTC.filter(c => c !== color); localStorage.setItem('a6_v27_tc', JSON.stringify(favTC));
                 } else {
-                    favHC = favHC.filter(c => c !== color); localStorage.setItem('a6_v26_hc', JSON.stringify(favHC));
+                    favHC = favHC.filter(c => c !== color); localStorage.setItem('a6_v27_hc', JSON.stringify(favHC));
                 }
                 renderFavs();
             }
@@ -908,29 +906,67 @@
             updatePageIndicator();
         }
 
-        async function exportA6() {
-            const btn = document.querySelector('.btn-primary');
-            const oTxt = btn.innerText;
-            btn.innerText = '이미지 추출 중... 📸'; 
-            btn.style.pointerEvents = 'none';
-            document.querySelector('.page-controls').style.display = 'none';
-
+        // 🔥 핵심: 화면 잘림 방지를 위해 캡처 시 스크롤 제약을 완전히 해제하는 공통 캡처 함수
+        async function captureWideCanvas() {
             const zoomWrap = document.querySelector('.zoom-wrap');
             const originTransform = zoomWrap.style.transform;
             zoomWrap.style.transform = 'none'; 
 
             const originPW = scalePlaceholder.style.width;
             const originPH = scalePlaceholder.style.height;
-            scalePlaceholder.style.width = document.getElementById('canvas').style.width;
+            const cvs = document.getElementById('canvas');
+            scalePlaceholder.style.width = cvs.style.width;
             scalePlaceholder.style.height = `${isL ? 420 : 595}px`;
 
-            window.scrollTo(0, 0); workspace.scrollTo(0, 0);
+            const ws = document.getElementById('workspace');
+            const sc = document.getElementById('scrollContent');
+            const originWsOverflow = ws.style.overflow;
+            
+            // 모든 부모 컨테이너의 제한을 풀어 html2canvas가 잘리지 않게 설정
+            ws.style.overflow = 'visible';
+            sc.style.overflow = 'visible';
+            document.body.style.overflow = 'visible';
+
+            window.scrollTo(0, 0); 
+            ws.scrollTo(0, 0);
+
+            await new Promise(r => setTimeout(r, 150)); // 브라우저 렌더링 여유 시간 부여
+
+            const wideCanvas = await html2canvas(cvs, { 
+                scale: 2, 
+                useCORS: true, 
+                backgroundColor: null, 
+                scrollX: 0, 
+                scrollY: 0,
+                width: cvs.offsetWidth,
+                height: cvs.offsetHeight,
+                windowWidth: cvs.offsetWidth + 200 // 화면 크기를 캔버스 크기 이상으로 속여서 잘림 완벽 방지
+            });
+
+            // 복구
+            zoomWrap.style.transform = originTransform;
+            scalePlaceholder.style.width = originPW;
+            scalePlaceholder.style.height = originPH;
+            ws.style.overflow = originWsOverflow;
+            sc.style.overflow = '';
+            document.body.style.overflow = '';
+
+            return wideCanvas;
+        }
+
+        // 🔥 전체 자동 분할 저장
+        async function exportAllPages() {
+            const btn1 = document.getElementById('btnExportCur');
+            const btn2 = document.getElementById('btnExportAll');
+            const oTxt = btn2.innerText;
+            btn2.innerText = '추출 중... 📸'; 
+            btn1.style.pointerEvents = 'none'; btn2.style.pointerEvents = 'none';
+            document.querySelector('.page-controls').style.display = 'none';
+
+            const wideCanvas = await captureWideCanvas();
 
             const w = isL ? 595 : 420; const h = isL ? 420 : 595; const gap = 30;
             const pages = bgLayer.children.length;
-            const cvs = document.getElementById('canvas');
-            
-            const wideCanvas = await html2canvas(cvs, { scale: 2, useCORS: true, backgroundColor: null, scrollX: 0, scrollY: 0 });
 
             for (let i = 0; i < pages; i++) {
                 const sc = document.createElement('canvas'); sc.width = w * 2; sc.height = h * 2;
@@ -943,12 +979,36 @@
                 await new Promise(r => setTimeout(r, 450));
             }
 
-            zoomWrap.style.transform = originTransform;
-            scalePlaceholder.style.width = originPW;
-            scalePlaceholder.style.height = originPH;
-            
             document.querySelector('.page-controls').style.display = 'flex';
-            btn.innerText = oTxt; btn.style.pointerEvents = 'auto';
+            btn2.innerText = oTxt; 
+            btn1.style.pointerEvents = 'auto'; btn2.style.pointerEvents = 'auto';
+            scrollToPage(currentPageIndex);
+        }
+
+        // 🔥 현재 페이지만 저장
+        async function exportCurrentPage() {
+            const btn1 = document.getElementById('btnExportCur');
+            const btn2 = document.getElementById('btnExportAll');
+            const oTxt = btn1.innerText;
+            btn1.innerText = '추출 중... 📸'; 
+            btn1.style.pointerEvents = 'none'; btn2.style.pointerEvents = 'none';
+            document.querySelector('.page-controls').style.display = 'none';
+
+            const wideCanvas = await captureWideCanvas();
+
+            const w = isL ? 595 : 420; const h = isL ? 420 : 595; const gap = 30;
+            const i = currentPageIndex;
+            
+            const sc = document.createElement('canvas'); sc.width = w * 2; sc.height = h * 2;
+            const ctx = sc.getContext('2d');
+            ctx.drawImage(wideCanvas, i * (w + gap) * 2, 0, w * 2, h * 2, 0, 0, w * 2, h * 2);
+            
+            const link = document.createElement('a'); link.download = `Log_Archive_p${i + 1}.png`;
+            link.href = sc.toDataURL('image/png'); link.click();
+
+            document.querySelector('.page-controls').style.display = 'flex';
+            btn1.innerText = oTxt; 
+            btn1.style.pointerEvents = 'auto'; btn2.style.pointerEvents = 'auto';
             scrollToPage(currentPageIndex);
         }
     </script>
