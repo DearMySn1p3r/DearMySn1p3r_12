@@ -29,6 +29,10 @@
             --frame-pad: 0px; 
             --page-gap: 30px; 
             
+            /* 모바일 버그 해결용 동적 레이아웃 변수 */
+            --title-space: 110px;
+            --copy-space: 45px;
+            
             --sidebar-width: 340px;
             --zoom-scale: 1.5; 
         }
@@ -203,18 +207,21 @@
             transition: color 0.3s;
         }
 
+        /* 🔥 모바일 버그 해결: 여백이 아닌 실제 엘리먼트 크기와 마진을 직접 통제합니다 */
         .editor {
-            height: calc(var(--a6-h) - (var(--frame-pad) * 2));
+            height: calc(var(--a6-h) - (var(--frame-pad) * 2) - var(--title-space) - var(--copy-space));
             width: calc(var(--a6-w) - (var(--frame-pad) * 2) - 80px); 
-            margin-top: var(--frame-pad); margin-left: calc(var(--frame-pad) + 40px);
+            margin-top: calc(var(--frame-pad) + var(--title-space)); 
+            margin-left: calc(var(--frame-pad) + 40px);
             column-width: calc(var(--a6-w) - (var(--frame-pad) * 2) - 80px);
             column-gap: calc(var(--page-gap) + (var(--frame-pad) * 2) + 80px); 
             
-            box-sizing: border-box; padding-left: 0; padding-right: 0;
+            box-sizing: border-box; padding-top: 0; padding-bottom: 0; padding-left: 0; padding-right: 0;
             outline: none; text-align: justify; white-space: pre-wrap; word-break: break-all;
             font-size: 10.5px; 
             letter-spacing: -0.5px; line-height: 1.7;
             color: var(--text-ui); text-indent: 1.2em;
+            transition: height 0.3s, margin-top 0.3s;
         }
         
         .editor div, .editor p { text-indent: 1.2em; margin: 0; }
@@ -473,8 +480,8 @@
         let globalPaperBgImg = 'none';
         let globalFrameBgImg = 'none';
 
-        let favTC = JSON.parse(localStorage.getItem('a6_v27_tc')) || ['#111111', '#8b0000', '#1e3a8a'];
-        let favHC = JSON.parse(localStorage.getItem('a6_v27_hc')) || ['#fef08a', '#bbf7d0', '#fbcfe8'];
+        let favTC = JSON.parse(localStorage.getItem('a6_v28_tc')) || ['#111111', '#8b0000', '#1e3a8a'];
+        let favHC = JSON.parse(localStorage.getItem('a6_v28_hc')) || ['#fef08a', '#bbf7d0', '#fbcfe8'];
 
         window.onload = () => { 
             updateTypo();
@@ -693,6 +700,7 @@
             scrollToPage(currentPageIndex);
         });
 
+        // 🔥 모바일 대응 동적 공간 조절 로직 개편
         function updateLayout() {
             const hasFrame = document.getElementById('chkFrame').checked;
             const hasTitle = document.getElementById('chkTitle').checked;
@@ -708,16 +716,20 @@
 
             const tBox = document.getElementById('title-box');
             if(hasTitle) {
-                tBox.classList.remove('hidden'); editor.style.paddingTop = '110px'; 
+                tBox.classList.remove('hidden'); 
+                root.style.setProperty('--title-space', '110px');
             } else {
-                tBox.classList.add('hidden'); editor.style.paddingTop = '30px';
+                tBox.classList.add('hidden'); 
+                root.style.setProperty('--title-space', '30px');
             }
 
             const cBox = document.getElementById('copyright-box');
             if(hasCopy) {
-                cBox.classList.remove('hidden'); editor.style.paddingBottom = '45px';
+                cBox.classList.remove('hidden'); 
+                root.style.setProperty('--copy-space', '45px');
             } else {
-                cBox.classList.add('hidden'); editor.style.paddingBottom = '20px';
+                cBox.classList.add('hidden'); 
+                root.style.setProperty('--copy-space', '20px');
             }
             
             setTimeout(checkPages, 50);
@@ -792,10 +804,10 @@
         function addFav(type) {
             if(type === 'text') {
                 let c = document.getElementById('tc').value;
-                if(!favTC.includes(c)) { favTC.push(c); localStorage.setItem('a6_v27_tc', JSON.stringify(favTC)); }
+                if(!favTC.includes(c)) { favTC.push(c); localStorage.setItem('a6_v28_tc', JSON.stringify(favTC)); }
             } else {
                 let c = document.getElementById('hc').value;
-                if(!favHC.includes(c)) { favHC.push(c); localStorage.setItem('a6_v27_hc', JSON.stringify(favHC)); }
+                if(!favHC.includes(c)) { favHC.push(c); localStorage.setItem('a6_v28_hc', JSON.stringify(favHC)); }
             }
             renderFavs();
         }
@@ -803,9 +815,9 @@
         function deleteFav(type, color) {
             if(confirm('해당 색상을 삭제하시겠습니까?')) {
                 if(type === 'text') {
-                    favTC = favTC.filter(c => c !== color); localStorage.setItem('a6_v27_tc', JSON.stringify(favTC));
+                    favTC = favTC.filter(c => c !== color); localStorage.setItem('a6_v28_tc', JSON.stringify(favTC));
                 } else {
-                    favHC = favHC.filter(c => c !== color); localStorage.setItem('a6_v27_hc', JSON.stringify(favHC));
+                    favHC = favHC.filter(c => c !== color); localStorage.setItem('a6_v28_hc', JSON.stringify(favHC));
                 }
                 renderFavs();
             }
@@ -906,7 +918,6 @@
             updatePageIndicator();
         }
 
-        // 🔥 핵심: 화면 잘림 방지를 위해 캡처 시 스크롤 제약을 완전히 해제하는 공통 캡처 함수
         async function captureWideCanvas() {
             const zoomWrap = document.querySelector('.zoom-wrap');
             const originTransform = zoomWrap.style.transform;
@@ -922,7 +933,6 @@
             const sc = document.getElementById('scrollContent');
             const originWsOverflow = ws.style.overflow;
             
-            // 모든 부모 컨테이너의 제한을 풀어 html2canvas가 잘리지 않게 설정
             ws.style.overflow = 'visible';
             sc.style.overflow = 'visible';
             document.body.style.overflow = 'visible';
@@ -930,7 +940,7 @@
             window.scrollTo(0, 0); 
             ws.scrollTo(0, 0);
 
-            await new Promise(r => setTimeout(r, 150)); // 브라우저 렌더링 여유 시간 부여
+            await new Promise(r => setTimeout(r, 150));
 
             const wideCanvas = await html2canvas(cvs, { 
                 scale: 2, 
@@ -940,10 +950,9 @@
                 scrollY: 0,
                 width: cvs.offsetWidth,
                 height: cvs.offsetHeight,
-                windowWidth: cvs.offsetWidth + 200 // 화면 크기를 캔버스 크기 이상으로 속여서 잘림 완벽 방지
+                windowWidth: cvs.offsetWidth + 200 
             });
 
-            // 복구
             zoomWrap.style.transform = originTransform;
             scalePlaceholder.style.width = originPW;
             scalePlaceholder.style.height = originPH;
@@ -954,7 +963,6 @@
             return wideCanvas;
         }
 
-        // 🔥 전체 자동 분할 저장
         async function exportAllPages() {
             const btn1 = document.getElementById('btnExportCur');
             const btn2 = document.getElementById('btnExportAll');
@@ -985,7 +993,6 @@
             scrollToPage(currentPageIndex);
         }
 
-        // 🔥 현재 페이지만 저장
         async function exportCurrentPage() {
             const btn1 = document.getElementById('btnExportCur');
             const btn2 = document.getElementById('btnExportAll');
