@@ -29,8 +29,8 @@
             --frame-pad: 0px; 
             --page-gap: 30px; 
             
-            /* 모바일 버그 해결용 동적 레이아웃 변수 */
-            --title-space: 110px;
+            /* 🔥 첫 페이지 제목 공간을 확보하는 동적 변수 */
+            --title-space-extra: 80px;
             --copy-space: 45px;
             
             --sidebar-width: 340px;
@@ -194,10 +194,6 @@
             transition: color 0.3s;
         }
         
-        .main-title:empty:before, .sub-title:empty:before { 
-            text-indent: 0 !important; text-align: center !important; display: block; width: 100%; 
-        }
-        
         .copyright-box {
             position: absolute; bottom: calc(var(--frame-pad) + 15px); left: 0; right: 0; margin: 0 auto;
             width: calc(var(--a6-w) - (var(--frame-pad) * 2)); text-align: center !important; pointer-events: auto;
@@ -207,29 +203,47 @@
             transition: color 0.3s;
         }
 
-        /* 🔥 모바일 버그 해결: 여백이 아닌 실제 엘리먼트 크기와 마진을 직접 통제합니다 */
+        /* 🔥 플레이스홀더를 분리하여 가상 블록과 충돌하지 않게 처리 */
+        .main-title:empty::before, .sub-title:empty::before, .copyright-box:empty::before { 
+            content: attr(data-placeholder); color: var(--text-muted); font-style: normal; 
+            pointer-events: none; text-indent: 0 !important; display: block; font-weight: 400; text-align: center;
+        }
+        .editor:empty::after { 
+            content: attr(data-placeholder); color: var(--text-muted); font-style: normal; 
+            pointer-events: none; text-indent: inherit; display: block; font-weight: 400;
+        }
+
+        /* 🔥 대망의 2페이지 여백 제거 로직: 
+           에디터의 마진/높이는 항상 모든 페이지 동일하게 꽉 차게 만들고,
+           '첫 번째 단(첫 페이지)'의 맨 위에만 투명한 Float 기둥을 세워서 
+           첫 페이지만 글씨가 밑으로 밀리도록 마법처럼 처리합니다! */
         .editor {
-            height: calc(var(--a6-h) - (var(--frame-pad) * 2) - var(--title-space) - var(--copy-space));
+            height: calc(var(--a6-h) - (var(--frame-pad) * 2) - 30px - var(--copy-space));
             width: calc(var(--a6-w) - (var(--frame-pad) * 2) - 80px); 
-            margin-top: calc(var(--frame-pad) + var(--title-space)); 
+            margin-top: calc(var(--frame-pad) + 30px); 
             margin-left: calc(var(--frame-pad) + 40px);
             column-width: calc(var(--a6-w) - (var(--frame-pad) * 2) - 80px);
             column-gap: calc(var(--page-gap) + (var(--frame-pad) * 2) + 80px); 
             
-            box-sizing: border-box; padding-top: 0; padding-bottom: 0; padding-left: 0; padding-right: 0;
+            box-sizing: border-box; padding: 0;
             outline: none; text-align: justify; white-space: pre-wrap; word-break: break-all;
             font-size: 10.5px; 
             letter-spacing: -0.5px; line-height: 1.7;
             color: var(--text-ui); text-indent: 1.2em;
-            transition: height 0.3s, margin-top 0.3s;
+            transition: height 0.3s;
+        }
+        
+        /* 첫 번째 단에만 생기는 마법의 투명 기둥 */
+        .editor::before {
+            content: "";
+            display: block;
+            float: left;
+            width: 100%;
+            height: var(--title-space-extra);
+            text-indent: 0;
         }
         
         .editor div, .editor p { text-indent: 1.2em; margin: 0; }
-        
-        [contenteditable]:empty:before { 
-            content: attr(data-placeholder); color: var(--text-muted); font-style: normal; 
-            pointer-events: none; text-indent: inherit; display: block; font-weight: 400;
-        }
 
         .page-controls {
             position: fixed; bottom: 35px; left: calc(50% + calc(var(--sidebar-width) / 2)); transform: translateX(-50%);
@@ -480,8 +494,8 @@
         let globalPaperBgImg = 'none';
         let globalFrameBgImg = 'none';
 
-        let favTC = JSON.parse(localStorage.getItem('a6_v28_tc')) || ['#111111', '#8b0000', '#1e3a8a'];
-        let favHC = JSON.parse(localStorage.getItem('a6_v28_hc')) || ['#fef08a', '#bbf7d0', '#fbcfe8'];
+        let favTC = JSON.parse(localStorage.getItem('a6_v29_tc')) || ['#111111', '#8b0000', '#1e3a8a'];
+        let favHC = JSON.parse(localStorage.getItem('a6_v29_hc')) || ['#fef08a', '#bbf7d0', '#fbcfe8'];
 
         window.onload = () => { 
             updateTypo();
@@ -700,7 +714,7 @@
             scrollToPage(currentPageIndex);
         });
 
-        // 🔥 모바일 대응 동적 공간 조절 로직 개편
+        // 🔥 모바일 & 2페이지 이상 레이아웃 로직 (가상 Float 블록 적용)
         function updateLayout() {
             const hasFrame = document.getElementById('chkFrame').checked;
             const hasTitle = document.getElementById('chkTitle').checked;
@@ -717,10 +731,10 @@
             const tBox = document.getElementById('title-box');
             if(hasTitle) {
                 tBox.classList.remove('hidden'); 
-                root.style.setProperty('--title-space', '110px');
+                root.style.setProperty('--title-space-extra', '80px'); // 첫 단에만 80px 기둥 생성
             } else {
                 tBox.classList.add('hidden'); 
-                root.style.setProperty('--title-space', '30px');
+                root.style.setProperty('--title-space-extra', '0px');
             }
 
             const cBox = document.getElementById('copyright-box');
@@ -804,10 +818,10 @@
         function addFav(type) {
             if(type === 'text') {
                 let c = document.getElementById('tc').value;
-                if(!favTC.includes(c)) { favTC.push(c); localStorage.setItem('a6_v28_tc', JSON.stringify(favTC)); }
+                if(!favTC.includes(c)) { favTC.push(c); localStorage.setItem('a6_v29_tc', JSON.stringify(favTC)); }
             } else {
                 let c = document.getElementById('hc').value;
-                if(!favHC.includes(c)) { favHC.push(c); localStorage.setItem('a6_v28_hc', JSON.stringify(favHC)); }
+                if(!favHC.includes(c)) { favHC.push(c); localStorage.setItem('a6_v29_hc', JSON.stringify(favHC)); }
             }
             renderFavs();
         }
@@ -815,9 +829,9 @@
         function deleteFav(type, color) {
             if(confirm('해당 색상을 삭제하시겠습니까?')) {
                 if(type === 'text') {
-                    favTC = favTC.filter(c => c !== color); localStorage.setItem('a6_v28_tc', JSON.stringify(favTC));
+                    favTC = favTC.filter(c => c !== color); localStorage.setItem('a6_v29_tc', JSON.stringify(favTC));
                 } else {
-                    favHC = favHC.filter(c => c !== color); localStorage.setItem('a6_v28_hc', JSON.stringify(favHC));
+                    favHC = favHC.filter(c => c !== color); localStorage.setItem('a6_v29_hc', JSON.stringify(favHC));
                 }
                 renderFavs();
             }
