@@ -260,11 +260,11 @@
             .close-mobile-btn { display: block; }
         }
 
-        /* 형광펜 디자인 (캡처 중이 아닐 때만 적용) */
+        /* 형광펜 디자인 (캡처 중이 아닐 때만 적용) - 위 여백 줄이고 아래 여백 늘림 */
         body:not(.is-exporting) .editor span[style*="background-color"]:not([style*="background-color: transparent"]) {
             -webkit-box-decoration-break: clone;
             box-decoration-break: clone;
-            padding: 2px;
+            padding: 0px 2px 3px 2px;
             border-radius: 4px;
         }
     </style>
@@ -980,12 +980,11 @@
                             const charSpan = document.createElement('span');
                             charSpan.style.backgroundColor = bg;
                             
-                            // 🔥 형광펜 세로 중앙 정렬 보정
-                            // 상하 여백을 균일하게 맞추고, 폰트 베이스라인 특성상 위로 쏠리는 현상을 top으로 살짝 내려줍니다.
-                            charSpan.style.paddingTop = '2px';
-                            charSpan.style.paddingBottom = '2px';
+                            // 🔥 형광펜 세로 중앙 정렬 보정 (위쪽 여백을 없애고 아래쪽 여백을 늘려 균일하게)
+                            charSpan.style.paddingTop = '0px';
+                            charSpan.style.paddingBottom = '4px';
                             charSpan.style.position = 'relative';
-                            charSpan.style.top = '1px'; // 텍스트 쏠림을 보정하기 위해 살짝 아래로 내림
+                            charSpan.style.top = '1px';
                             
                             // 🔥 자연스러운 시각 효과를 위해 첫 글자와 끝 글자 모서리 둥글게 처리
                             if (i === 0) {
