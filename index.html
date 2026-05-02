@@ -265,6 +265,14 @@
             .page-controls { bottom: 90px; padding: 8px 15px; }
             .close-mobile-btn { display: block; }
         }
+
+        /* 🔥 형광펜 디자인 교정 (캡처 중이 아닐 때만 적용) */
+        body:not(.is-exporting) .editor span[style*="background-color"]:not([style*="background-color: transparent"]) {
+            -webkit-box-decoration-break: clone;
+            box-decoration-break: clone;
+            padding: 3px 2px 1px 2px;
+            border-radius: 4px;
+        }
     </style>
 </head>
 <body>
@@ -933,6 +941,8 @@
         }
 
         async function captureWideCanvas() {
+            document.body.classList.add('is-exporting'); // 🔥 캡처 전용 모드 켜기
+
             const zoomWrap = document.querySelector('.zoom-wrap');
             const originTransform = zoomWrap.style.transform;
             zoomWrap.style.transform = 'none'; 
@@ -1006,6 +1016,8 @@
             ws.style.overflow = originWsOverflow;
             sc.style.overflow = '';
             document.body.style.overflow = '';
+
+            document.body.classList.remove('is-exporting'); // 🔥 캡처 전용 모드 끄기
 
             return wideCanvas;
         }
