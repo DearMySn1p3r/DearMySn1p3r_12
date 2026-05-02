@@ -963,9 +963,15 @@
             const originalHTML = editor.innerHTML; 
             const spansToFix = Array.from(editor.querySelectorAll('span')).filter(s => s.style.backgroundColor && s.style.backgroundColor !== 'transparent' && s.style.backgroundColor !== 'rgba(0, 0, 0, 0)');
             
+            // 🔥 형광펜 세로 정렬 보정
+            // 화면 CSS와 동일한 padding/border-radius를 export 시점에도 적용 (export 중에는 CSS 비활성화됨).
+            // - 위쪽 패딩 0, 아래쪽 패딩 4로 글자가 시각적 중앙에 오도록 보정
+            // - 단일 라인은 원본 span에 직접 적용, 멀티 라인은 줄바꿈 박스 깨짐 방지를 위해 글자별로 쪼갬
             spansToFix.forEach(span => {
+                const bg = span.style.backgroundColor;
+
                 if (span.getClientRects().length > 1) { 
-                    const bg = span.style.backgroundColor;
+                    // 멀티 라인: 글자별로 쪼개서 처리
                     span.style.backgroundColor = 'transparent';
                     const walker = document.createTreeWalker(span, NodeFilter.SHOW_TEXT, null, false);
                     let node;
@@ -980,21 +986,17 @@
                         for (let i = 0; i < text.length; i++) {
                             const charSpan = document.createElement('span');
                             charSpan.style.backgroundColor = bg;
-                            
-                            // 🔥 형광펜 세로 중앙 정렬 보정
-                            // 한국어 폰트는 베이스라인이 em-box 하단에 가까워 위쪽 여백이 많이 생김.
-                            // paddingTop을 줄이고 paddingBottom을 늘려서 글자가 시각적으로 가운데 오도록 보정.
                             charSpan.style.paddingTop = '0px';
                             charSpan.style.paddingBottom = '4px';
                             
-                            // 🔥 자연스러운 시각 효과를 위해 첫 글자와 끝 글자 모서리 둥글게 처리
+                            // 첫 글자와 끝 글자 모서리 둥글게 처리
                             if (i === 0) {
-                                charSpan.style.paddingLeft = '3px';
+                                charSpan.style.paddingLeft = '2px';
                                 charSpan.style.borderTopLeftRadius = '4px';
                                 charSpan.style.borderBottomLeftRadius = '4px';
                             }
                             if (i === text.length - 1) {
-                                charSpan.style.paddingRight = '3px';
+                                charSpan.style.paddingRight = '2px';
                                 charSpan.style.borderTopRightRadius = '4px';
                                 charSpan.style.borderBottomRightRadius = '4px';
                             }
@@ -1004,6 +1006,10 @@
                         }
                         textNode.parentNode.replaceChild(fragment, textNode);
                     });
+                } else {
+                    // 단일 라인: 원본 span에 padding/border-radius 직접 적용
+                    span.style.padding = '0 2px 4px 2px';
+                    span.style.borderRadius = '4px';
                 }
             });
 
