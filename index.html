@@ -218,7 +218,7 @@
            '첫 번째 단(첫 페이지)'의 맨 위에만 투명한 Float 기둥을 세워서 
            첫 페이지만 글씨가 밑으로 밀리도록 마법처럼 처리합니다! */
         .editor {
-            height: calc(var(--a6-h) - (var(--frame-pad) * 2) - 30px - var(--copy-space));
+            height: calc(var(--a6-h) - (var(--frame-pad) * 2) - 30px);
             width: calc(var(--a6-w) - (var(--frame-pad) * 2) - 80px); 
             margin-top: calc(var(--frame-pad) + 30px); 
             margin-left: calc(var(--frame-pad) + 40px);
@@ -233,7 +233,7 @@
             transition: height 0.3s;
         }
         
-        /* 첫 번째 단에만 생기는 마법의 투명 기둥 */
+        /* 첫 번째 단에만 생기는 마법의 투명 기둥 (상단 제목 공간) */
         .editor::before {
             content: "";
             display: block;
@@ -241,6 +241,18 @@
             width: 100%;
             height: var(--title-space-extra);
             text-indent: 0;
+        }
+
+        /* 첫 번째 단 하단에만 카피라이트 공간 확보 (::before와 동일한 float 트릭) */
+        .editor::after {
+            content: "";
+            display: block;
+            float: left;
+            width: 100%;
+            height: var(--copy-space);
+            text-indent: 0;
+            clear: left;
+            margin-top: calc(var(--a6-h) - (var(--frame-pad) * 2) - 30px - var(--title-space-extra) - var(--copy-space));
         }
         
         .editor div, .editor p { text-indent: 1.2em; margin: 0; }
@@ -506,8 +518,9 @@
             const saved = localStorage.getItem('a6_content_auto');
             if(saved) editor.innerHTML = saved;
             
-            if (window.innerWidth >= 768) {
+            if (window.innerWidth >= 1100) {
                 sidebar.classList.remove('collapsed');
+                document.querySelector('.page-controls').style.left = 'calc(50% + calc(var(--sidebar-width) / 2))';
             }
             
             calcZoomScale(); 
