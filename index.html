@@ -957,7 +957,7 @@
             window.scrollTo(0, 0); 
             ws.scrollTo(0, 0);
 
-            // 🔥 형광펜 줄바꿈 박스 깨짐 및 [위로 쏠림 현상(중앙 정렬)] 보정
+            // 🔥 형광펜 줄바꿈 박스 깨짐 및 세로 중앙 정렬 보정
             const editor = document.getElementById('editor');
             const originalHTML = editor.innerHTML; 
             const spansToFix = Array.from(editor.querySelectorAll('span')).filter(s => s.style.backgroundColor && s.style.backgroundColor !== 'transparent' && s.style.backgroundColor !== 'rgba(0, 0, 0, 0)');
@@ -980,18 +980,21 @@
                             const charSpan = document.createElement('span');
                             charSpan.style.backgroundColor = bg;
                             
-                            // 🔥 형광펜 중앙정렬 보정 (폰트 베이스라인으로 인해 위로 쏠리는 것을 하단 여백으로 잡아줌)
-                            charSpan.style.paddingTop = '1px';
-                            charSpan.style.paddingBottom = '3px';
+                            // 🔥 형광펜 세로 중앙 정렬 보정
+                            // 상하 여백을 균일하게 맞추고, 폰트 베이스라인 특성상 위로 쏠리는 현상을 top으로 살짝 내려줍니다.
+                            charSpan.style.paddingTop = '2px';
+                            charSpan.style.paddingBottom = '2px';
+                            charSpan.style.position = 'relative';
+                            charSpan.style.top = '1px'; // 텍스트 쏠림을 보정하기 위해 살짝 아래로 내림
                             
                             // 🔥 자연스러운 시각 효과를 위해 첫 글자와 끝 글자 모서리 둥글게 처리
                             if (i === 0) {
-                                charSpan.style.paddingLeft = '2px';
+                                charSpan.style.paddingLeft = '3px';
                                 charSpan.style.borderTopLeftRadius = '4px';
                                 charSpan.style.borderBottomLeftRadius = '4px';
                             }
                             if (i === text.length - 1) {
-                                charSpan.style.paddingRight = '2px';
+                                charSpan.style.paddingRight = '3px';
                                 charSpan.style.borderTopRightRadius = '4px';
                                 charSpan.style.borderBottomRightRadius = '4px';
                             }
