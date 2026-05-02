@@ -203,7 +203,6 @@
             transition: color 0.3s;
         }
 
-        /* 🔥 플레이스홀더를 분리하여 가상 블록과 충돌하지 않게 처리 */
         .main-title:empty::before, .sub-title:empty::before, .copyright-box:empty::before { 
             content: attr(data-placeholder); color: var(--text-muted); font-style: normal; 
             pointer-events: none; text-indent: 0 !important; display: block; font-weight: 400; text-align: center;
@@ -213,10 +212,6 @@
             pointer-events: none; text-indent: inherit; display: block; font-weight: 400;
         }
 
-        /* 🔥 대망의 2페이지 여백 제거 로직: 
-           에디터의 마진/높이는 항상 모든 페이지 동일하게 꽉 차게 만들고,
-           '첫 번째 단(첫 페이지)'의 맨 위에만 투명한 Float 기둥을 세워서 
-           첫 페이지만 글씨가 밑으로 밀리도록 마법처럼 처리합니다! */
         .editor {
             height: calc(var(--a6-h) - (var(--frame-pad) * 2) - 30px - var(--copy-space));
             width: calc(var(--a6-w) - (var(--frame-pad) * 2) - 80px); 
@@ -233,7 +228,6 @@
             transition: height 0.3s;
         }
         
-        /* 첫 번째 단에만 생기는 마법의 투명 기둥 */
         .editor::before {
             content: "";
             display: block;
@@ -266,7 +260,7 @@
             .close-mobile-btn { display: block; }
         }
 
-        /* 🔥 형광펜 디자인 교정 (캡처 중이 아닐 때만 적용) */
+        /* 형광펜 디자인 (캡처 중이 아닐 때만 적용) */
         body:not(.is-exporting) .editor span[style*="background-color"]:not([style*="background-color: transparent"]) {
             -webkit-box-decoration-break: clone;
             box-decoration-break: clone;
@@ -722,7 +716,6 @@
             scrollToPage(currentPageIndex);
         });
 
-        // 🔥 모바일 & 2페이지 이상 레이아웃 로직 (가상 Float 블록 적용)
         function updateLayout() {
             const hasFrame = document.getElementById('chkFrame').checked;
             const hasTitle = document.getElementById('chkTitle').checked;
@@ -739,7 +732,7 @@
             const tBox = document.getElementById('title-box');
             if(hasTitle) {
                 tBox.classList.remove('hidden'); 
-                root.style.setProperty('--title-space-extra', '80px'); // 첫 단에만 80px 기둥 생성
+                root.style.setProperty('--title-space-extra', '80px'); 
             } else {
                 tBox.classList.add('hidden'); 
                 root.style.setProperty('--title-space-extra', '0px');
@@ -941,7 +934,7 @@
         }
 
         async function captureWideCanvas() {
-            document.body.classList.add('is-exporting'); // 🔥 캡처 전용 모드 켜기
+            document.body.classList.add('is-exporting'); 
 
             const zoomWrap = document.querySelector('.zoom-wrap');
             const originTransform = zoomWrap.style.transform;
@@ -964,13 +957,13 @@
             window.scrollTo(0, 0); 
             ws.scrollTo(0, 0);
 
-            // 🔥 [추가된 부분] 형광펜(배경색) 줄바꿈 시 네모 박스로 깨지는 html2canvas 버그 방지용 임시 글자 분할
+            // 🔥 형광펜 줄바꿈 박스 깨짐 및 [위로 쏠림 현상(중앙 정렬)] 보정
             const editor = document.getElementById('editor');
-            const originalHTML = editor.innerHTML; // 원본 HTML 저장
+            const originalHTML = editor.innerHTML; 
             const spansToFix = Array.from(editor.querySelectorAll('span')).filter(s => s.style.backgroundColor && s.style.backgroundColor !== 'transparent' && s.style.backgroundColor !== 'rgba(0, 0, 0, 0)');
             
             spansToFix.forEach(span => {
-                if (span.getClientRects().length > 1) { // 여러 줄로 나뉜 요소만 타겟팅
+                if (span.getClientRects().length > 1) { 
                     const bg = span.style.backgroundColor;
                     span.style.backgroundColor = 'transparent';
                     const walker = document.createTreeWalker(span, NodeFilter.SHOW_TEXT, null, false);
@@ -982,10 +975,27 @@
                         const text = textNode.nodeValue;
                         if (!text) return;
                         const fragment = document.createDocumentFragment();
-                        // 렌더링 직전에만 글자 단위로 각각 배경색을 씌운 span으로 쪼갭니다.
+                        
                         for (let i = 0; i < text.length; i++) {
                             const charSpan = document.createElement('span');
                             charSpan.style.backgroundColor = bg;
+                            
+                            // 🔥 형광펜 중앙정렬 보정 (폰트 베이스라인으로 인해 위로 쏠리는 것을 하단 여백으로 잡아줌)
+                            charSpan.style.paddingTop = '1px';
+                            charSpan.style.paddingBottom = '3px';
+                            
+                            // 🔥 자연스러운 시각 효과를 위해 첫 글자와 끝 글자 모서리 둥글게 처리
+                            if (i === 0) {
+                                charSpan.style.paddingLeft = '2px';
+                                charSpan.style.borderTopLeftRadius = '4px';
+                                charSpan.style.borderBottomLeftRadius = '4px';
+                            }
+                            if (i === text.length - 1) {
+                                charSpan.style.paddingRight = '2px';
+                                charSpan.style.borderTopRightRadius = '4px';
+                                charSpan.style.borderBottomRightRadius = '4px';
+                            }
+
                             charSpan.textContent = text[i];
                             fragment.appendChild(charSpan);
                         }
@@ -1007,7 +1017,6 @@
                 windowWidth: cvs.offsetWidth + 200 
             });
 
-            // 🔥 [추가된 부분] 임시 분할 처리했던 에디터를 원본 상태로 복구
             editor.innerHTML = originalHTML;
 
             zoomWrap.style.transform = originTransform;
@@ -1017,7 +1026,7 @@
             sc.style.overflow = '';
             document.body.style.overflow = '';
 
-            document.body.classList.remove('is-exporting'); // 🔥 캡처 전용 모드 끄기
+            document.body.classList.remove('is-exporting'); 
 
             return wideCanvas;
         }
