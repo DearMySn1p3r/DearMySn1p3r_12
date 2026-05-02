@@ -954,6 +954,36 @@
             window.scrollTo(0, 0); 
             ws.scrollTo(0, 0);
 
+            // 🔥 [추가된 부분] 형광펜(배경색) 줄바꿈 시 네모 박스로 깨지는 html2canvas 버그 방지용 임시 글자 분할
+            const editor = document.getElementById('editor');
+            const originalHTML = editor.innerHTML; // 원본 HTML 저장
+            const spansToFix = Array.from(editor.querySelectorAll('span')).filter(s => s.style.backgroundColor && s.style.backgroundColor !== 'transparent' && s.style.backgroundColor !== 'rgba(0, 0, 0, 0)');
+            
+            spansToFix.forEach(span => {
+                if (span.getClientRects().length > 1) { // 여러 줄로 나뉜 요소만 타겟팅
+                    const bg = span.style.backgroundColor;
+                    span.style.backgroundColor = 'transparent';
+                    const walker = document.createTreeWalker(span, NodeFilter.SHOW_TEXT, null, false);
+                    let node;
+                    const textNodes = [];
+                    while ((node = walker.nextNode())) { textNodes.push(node); }
+                    
+                    textNodes.forEach(textNode => {
+                        const text = textNode.nodeValue;
+                        if (!text) return;
+                        const fragment = document.createDocumentFragment();
+                        // 렌더링 직전에만 글자 단위로 각각 배경색을 씌운 span으로 쪼갭니다.
+                        for (let i = 0; i < text.length; i++) {
+                            const charSpan = document.createElement('span');
+                            charSpan.style.backgroundColor = bg;
+                            charSpan.textContent = text[i];
+                            fragment.appendChild(charSpan);
+                        }
+                        textNode.parentNode.replaceChild(fragment, textNode);
+                    });
+                }
+            });
+
             await new Promise(r => setTimeout(r, 150));
 
             const wideCanvas = await html2canvas(cvs, { 
@@ -966,6 +996,9 @@
                 height: cvs.offsetHeight,
                 windowWidth: cvs.offsetWidth + 200 
             });
+
+            // 🔥 [추가된 부분] 임시 분할 처리했던 에디터를 원본 상태로 복구
+            editor.innerHTML = originalHTML;
 
             zoomWrap.style.transform = originTransform;
             scalePlaceholder.style.width = originPW;
