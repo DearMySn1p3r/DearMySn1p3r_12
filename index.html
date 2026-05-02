@@ -163,7 +163,7 @@
             background-size: cover; background-position: center;
         }
 
-        .content-layer { position: relative; z-index: 10; }
+        .content-layer { position: relative; z-index: 10; display: flex; }
         .meta-layer { position: absolute; top: 0; left: 0; width: var(--a6-w); height: var(--a6-h); pointer-events: none; z-index: 20; }
         
         .title-box {
@@ -203,6 +203,7 @@
             transition: color 0.3s;
         }
 
+        /* 🔥 플레이스홀더를 분리하여 가상 블록과 충돌하지 않게 처리 */
         .main-title:empty::before, .sub-title:empty::before, .copyright-box:empty::before { 
             content: attr(data-placeholder); color: var(--text-muted); font-style: normal; 
             pointer-events: none; text-indent: 0 !important; display: block; font-weight: 400; text-align: center;
@@ -212,39 +213,36 @@
             pointer-events: none; text-indent: inherit; display: block; font-weight: 400;
         }
 
-        /* ========================================================================
-           ✨ 2-Editor 구조: 1페이지(editor1)와 2페이지+(editor2) 분리
-           - editor1: 단일 컬럼, 고정 높이(제목/카피라이트 자리 제외)
-           - editor2: multi-column, 2페이지부터 시작
-           - JS가 editor1 오버플로우 시 자동으로 editor2 앞쪽으로 이동
-           ======================================================================== */
+        /* 🔥 대망의 2페이지 여백 제거 로직: 
+           에디터의 마진/높이는 항상 모든 페이지 동일하게 꽉 차게 만들고,
+           '첫 번째 단(첫 페이지)'의 맨 위에만 투명한 Float 기둥을 세워서 
+           첫 페이지만 글씨가 밑으로 밀리도록 마법처럼 처리합니다! */
         .editor {
-            position: absolute;
+            height: calc(var(--a6-h) - (var(--frame-pad) * 2) - 30px - var(--copy-space));
+            width: calc(var(--a6-w) - (var(--frame-pad) * 2) - 80px); 
+            margin-top: calc(var(--frame-pad) + 30px); 
+            margin-left: calc(var(--frame-pad) + 40px);
+            column-width: calc(var(--a6-w) - (var(--frame-pad) * 2) - 80px);
+            column-gap: calc(var(--page-gap) + (var(--frame-pad) * 2) + 80px); 
+            
             box-sizing: border-box; padding: 0;
             outline: none; text-align: justify; white-space: pre-wrap; word-break: break-all;
             font-size: 10.5px; 
             letter-spacing: -0.5px; line-height: 1.7;
             color: var(--text-ui); text-indent: 1.2em;
-            transition: height 0.3s, top 0.3s, left 0.3s;
+            transition: height 0.3s;
         }
-
-        .editor-first {
-            top: calc(var(--frame-pad) + 30px + var(--title-space-extra));
-            left: calc(var(--frame-pad) + 40px);
-            width: calc(var(--a6-w) - (var(--frame-pad) * 2) - 80px);
-            height: calc(var(--a6-h) - (var(--frame-pad) * 2) - 30px - var(--title-space-extra) - var(--copy-space));
-            overflow: hidden;
+        
+        /* 첫 번째 단에만 생기는 마법의 투명 기둥 */
+        .editor::before {
+            content: "";
+            display: block;
+            float: left;
+            width: 100%;
+            height: var(--title-space-extra);
+            text-indent: 0;
         }
-
-        .editor-rest {
-            top: calc(var(--frame-pad) + 30px);
-            left: calc(var(--frame-pad) + 40px + var(--a6-w) + var(--page-gap));
-            width: calc(var(--a6-w) - (var(--frame-pad) * 2) - 80px);
-            height: calc(var(--a6-h) - (var(--frame-pad) * 2) - 30px);
-            column-width: calc(var(--a6-w) - (var(--frame-pad) * 2) - 80px);
-            column-gap: calc(var(--page-gap) + (var(--frame-pad) * 2) + 80px); 
-        }
-
+        
         .editor div, .editor p { text-indent: 1.2em; margin: 0; }
 
         .page-controls {
@@ -467,8 +465,7 @@
                                 <div class="copyright-box" id="copyright-box" contenteditable="true"><b>Pair Name:</b> <span style="font-weight:400;">Character A × Character B</span></div>
                             </div>
                             
-                            <div class="editor editor-first" id="editor1" contenteditable="true" data-placeholder="이곳을 클릭하여 글을 작성하세요. 1페이지가 가득 차면 2페이지로 자동 흘러갑니다."></div>
-                            <div class="editor editor-rest" id="editor2" contenteditable="true" data-placeholder=""></div>
+                            <div class="editor" id="editor" contenteditable="true" data-placeholder="이곳을 클릭하여 글을 작성하세요. 복사 붙여넣기 시 텍스트 서식이 자동으로 제거됩니다."></div>
                         </div>
                     </div>
                 </div>
@@ -484,9 +481,7 @@
 
     <script>
         const root = document.documentElement;
-        const editor1 = document.getElementById('editor1');
-        const editor2 = document.getElementById('editor2');
-        const editor = editor1; // 일부 기존 코드 호환용
+        const editor = document.getElementById('editor');
         const bgLayer = document.getElementById('bgLayer');
         const sidebar = document.getElementById('sidebar');
         const workspace = document.getElementById('workspace');
@@ -495,221 +490,12 @@
         
         let isL = false;
         let currentPageIndex = 0;
-        let _syncing = false;
 
         let globalPaperBgImg = 'none';
         let globalFrameBgImg = 'none';
 
         let favTC = JSON.parse(localStorage.getItem('a6_v29_tc')) || ['#111111', '#8b0000', '#1e3a8a'];
         let favHC = JSON.parse(localStorage.getItem('a6_v29_hc')) || ['#fef08a', '#bbf7d0', '#fbcfe8'];
-
-        // ============================================================
-        //  2-Editor 동기화: 커서/오버플로/풀백 헬퍼
-        // ============================================================
-        const PAGE_BREAK_MARKER = '<!--__PAGE_BREAK__-->';
-
-        function getCharacterCount(el) {
-            let count = 0;
-            const walker = document.createTreeWalker(el, NodeFilter.SHOW_TEXT);
-            let n; while ((n = walker.nextNode())) count += n.length;
-            return count;
-        }
-        
-        function getCursorCharOffset(el) {
-            const sel = window.getSelection();
-            if (!sel.rangeCount) return -1;
-            const range = sel.getRangeAt(0);
-            if (!el.contains(range.startContainer)) return -1;
-            let offset = 0;
-            const walker = document.createTreeWalker(el, NodeFilter.SHOW_TEXT);
-            let n;
-            while ((n = walker.nextNode())) {
-                if (n === range.startContainer) return offset + range.startOffset;
-                offset += n.length;
-            }
-            return offset;
-        }
-
-        function setCursorAtCharOffset(el, charOffset) {
-            let remaining = Math.max(0, charOffset);
-            const walker = document.createTreeWalker(el, NodeFilter.SHOW_TEXT);
-            let n;
-            while ((n = walker.nextNode())) {
-                if (n.length >= remaining) {
-                    const r = document.createRange();
-                    r.setStart(n, remaining); r.collapse(true);
-                    const sel = window.getSelection(); sel.removeAllRanges(); sel.addRange(r);
-                    return true;
-                }
-                remaining -= n.length;
-            }
-            // 끝으로
-            const r = document.createRange(); r.selectNodeContents(el); r.collapse(false);
-            const sel = window.getSelection(); sel.removeAllRanges(); sel.addRange(r);
-            return false;
-        }
-
-        // editor1에서 limit를 넘어가는 첫 문자 offset을 이진탐색으로 찾기
-        function findOverflowOffset() {
-            const limit = editor1.clientHeight;
-            const total = getCharacterCount(editor1);
-            if (total === 0) return -1;
-            
-            // 일단 마지막 문자의 bottom이 limit 이내면 오버플로 없음
-            const lastY = getYBottomAtCharOffset(editor1, total - 1);
-            if (lastY <= limit) return -1;
-
-            let lo = 0, hi = total - 1;
-            while (lo < hi) {
-                const mid = Math.floor((lo + hi) / 2);
-                const y = getYBottomAtCharOffset(editor1, mid);
-                if (y > limit) hi = mid;
-                else lo = mid + 1;
-            }
-            return lo;
-        }
-
-        function getYBottomAtCharOffset(el, charOffset) {
-            let remaining = charOffset;
-            const walker = document.createTreeWalker(el, NodeFilter.SHOW_TEXT);
-            let n;
-            while ((n = walker.nextNode())) {
-                if (n.length > remaining) {
-                    const r = document.createRange();
-                    r.setStart(n, remaining); r.setEnd(n, remaining + 1);
-                    const rect = r.getBoundingClientRect();
-                    const elRect = el.getBoundingClientRect();
-                    return rect.bottom - elRect.top;
-                }
-                remaining -= n.length;
-            }
-            return Infinity;
-        }
-        
-        function getNodeAtCharOffset(el, charOffset) {
-            let remaining = charOffset;
-            const walker = document.createTreeWalker(el, NodeFilter.SHOW_TEXT);
-            let n;
-            while ((n = walker.nextNode())) {
-                if (n.length >= remaining) return { node: n, offset: remaining };
-                remaining -= n.length;
-            }
-            return null;
-        }
-
-        // editor1 -> editor2: 오버플로 이동 (포맷 보존)
-        function syncOverflow() {
-            if (_syncing) return;
-            _syncing = true;
-            
-            const cursorIn = (document.activeElement === editor2) ? editor2 : editor1;
-            const cursorOffset = getCursorCharOffset(cursorIn);
-            const editor1CountBefore = getCharacterCount(editor1);
-            
-            let safety = 0, moved = false;
-            while (editor1.scrollHeight > editor1.clientHeight + 1 && safety++ < 50) {
-                const splitOffset = findOverflowOffset();
-                if (splitOffset < 0 || splitOffset >= getCharacterCount(editor1)) break;
-                
-                const splitPos = getNodeAtCharOffset(editor1, splitOffset);
-                if (!splitPos) break;
-                
-                const range = document.createRange();
-                range.setStart(splitPos.node, splitPos.offset);
-                range.setEndAfter(editor1.lastChild || editor1);
-                
-                const fragment = range.extractContents();
-                if (!fragment.firstChild) break;
-                editor2.insertBefore(fragment, editor2.firstChild);
-                moved = true;
-            }
-            
-            // 빈 트레일링 노드 정리
-            cleanupEmptyTrailing(editor1);
-            
-            if (moved) {
-                const editor1CountAfter = getCharacterCount(editor1);
-                if (cursorIn === editor1) {
-                    if (cursorOffset <= editor1CountAfter) {
-                        editor1.focus(); setCursorAtCharOffset(editor1, cursorOffset);
-                    } else {
-                        editor2.focus(); setCursorAtCharOffset(editor2, cursorOffset - editor1CountAfter);
-                    }
-                } else {
-                    // 커서가 editor2였으면 위치는 그대로 (editor2 앞쪽에 추가됐을 뿐)
-                    const movedChars = editor1CountBefore - editor1CountAfter;
-                    editor2.focus(); setCursorAtCharOffset(editor2, cursorOffset + movedChars);
-                }
-            }
-            
-            _syncing = false;
-        }
-
-        // editor2 -> editor1: 빈 자리에 끌어오기
-        function pullFromEditor2() {
-            if (_syncing) return;
-            if (!editor2.firstChild) return;
-            _syncing = true;
-            
-            const cursorIn = (document.activeElement === editor2) ? editor2 : editor1;
-            const cursorOffset = getCursorCharOffset(cursorIn);
-            const editor1CountBefore = getCharacterCount(editor1);
-            
-            let pulled = false, safety = 0;
-            while (editor2.firstChild && safety++ < 5000) {
-                const node = editor2.firstChild;
-                editor1.appendChild(node);
-                if (editor1.scrollHeight > editor1.clientHeight + 1) {
-                    editor2.insertBefore(node, editor2.firstChild);
-                    break;
-                }
-                pulled = true;
-            }
-            
-            if (pulled) {
-                const editor1CountAfter = getCharacterCount(editor1);
-                const pulledChars = editor1CountAfter - editor1CountBefore;
-                if (cursorIn === editor2) {
-                    if (cursorOffset < pulledChars) {
-                        editor1.focus(); setCursorAtCharOffset(editor1, editor1CountBefore + cursorOffset);
-                    } else {
-                        editor2.focus(); setCursorAtCharOffset(editor2, cursorOffset - pulledChars);
-                    }
-                }
-            }
-            
-            _syncing = false;
-        }
-
-        function cleanupEmptyTrailing(el) {
-            // extractContents 후 빈 wrapper가 남는 경우 제거
-            while (el.lastChild) {
-                const last = el.lastChild;
-                if (last.nodeType === 1 && last.textContent === '' && !last.querySelector('img,br,hr')) {
-                    last.remove();
-                } else break;
-            }
-        }
-        
-        function combinedHTML() {
-            return editor1.innerHTML + PAGE_BREAK_MARKER + editor2.innerHTML;
-        }
-
-        function setCombinedHTML(html) {
-            if (typeof html !== 'string') html = '';
-            if (html.includes(PAGE_BREAK_MARKER)) {
-                const idx = html.indexOf(PAGE_BREAK_MARKER);
-                editor1.innerHTML = html.substring(0, idx);
-                editor2.innerHTML = html.substring(idx + PAGE_BREAK_MARKER.length);
-            } else {
-                // 구버전 단일 에디터 데이터 호환: 전부 editor1에 넣고 오버플로 처리
-                editor1.innerHTML = html;
-                editor2.innerHTML = '';
-            }
-            // 로드 후 분포 재계산
-            setTimeout(() => { syncOverflow(); pullFromEditor2(); }, 0);
-        }
-
 
         window.onload = () => { 
             updateTypo();
@@ -718,11 +504,10 @@
             updateLayout(); 
             
             const saved = localStorage.getItem('a6_content_auto');
-            if(saved) setCombinedHTML(saved);
+            if(saved) editor.innerHTML = saved;
             
-            if (window.innerWidth >= 1100) {
+            if (window.innerWidth >= 768) {
                 sidebar.classList.remove('collapsed');
-                document.querySelector('.page-controls').style.left = 'calc(50% + calc(var(--sidebar-width) / 2))';
             }
             
             calcZoomScale(); 
@@ -755,51 +540,39 @@
         });
 
         function toggleQuotes() {
-            // 두 에디터 모두 처리
-            [editor1, editor2].forEach(ed => {
-                const walker = document.createTreeWalker(ed, NodeFilter.SHOW_TEXT, null, false);
-                let node;
-                const textNodes = [];
-                let hasStraight = false;
+            const walker = document.createTreeWalker(editor, NodeFilter.SHOW_TEXT, null, false);
+            let node;
+            const textNodes = [];
+            let hasStraight = false;
 
-                while ((node = walker.nextNode())) {
-                    textNodes.push(node);
-                    if (node.nodeValue.includes('"') || node.nodeValue.includes("'")) {
-                        hasStraight = true;
-                    }
+            while ((node = walker.nextNode())) {
+                textNodes.push(node);
+                if (node.nodeValue.includes('"') || node.nodeValue.includes("'")) {
+                    hasStraight = true;
                 }
+            }
 
-                textNodes.forEach(n => {
-                    let val = n.nodeValue;
-                    if (hasStraight) {
-                        val = val.replace(/(^|[\s\(\[\{<])"/g, '$1“').replace(/"/g, '”')
-                                 .replace(/(^|[\s\(\[\{<])'/g, '$1‘').replace(/'/g, '’');
-                    } else {
-                        val = val.replace(/[“”]/g, '"').replace(/[‘’]/g, "'");
-                    }
-                    n.nodeValue = val;
-                });
+            textNodes.forEach(n => {
+                let val = n.nodeValue;
+                if (hasStraight) {
+                    val = val.replace(/(^|[\s\(\[\{<])"/g, '$1“').replace(/"/g, '”')
+                             .replace(/(^|[\s\(\[\{<])'/g, '$1‘').replace(/'/g, '’');
+                } else {
+                    val = val.replace(/[“”]/g, '"').replace(/[‘’]/g, "'");
+                }
+                n.nodeValue = val;
             });
 
-            localStorage.setItem('a6_content_auto', combinedHTML());
+            localStorage.setItem('a6_content_auto', editor.innerHTML);
             updateStats();
         }
 
-        function getEditor2PageCount() {
-            // editor2가 사실상 비어있으면 0 (즉 1페이지만 존재). 
-            // contenteditable이 자동 추가하는 빈 <br>은 무시.
-            const txt = (editor2.innerText || '').replace(/\s/g, '');
-            const hasMedia = editor2.querySelector('img,hr');
-            if (txt.length === 0 && !hasMedia) return 0;
-            const cw = editor2.clientWidth;
-            if (cw <= 0) return 1;
-            const gap = 30;
-            const cg = gap + (document.getElementById('chkFrame').checked ? 60 : 0) + 80;
-            return Math.max(1, Math.round((editor2.scrollWidth + cg) / (cw + cg)));
-        }
-
         function updatePageIndicator() {
-            const pages = 1 + getEditor2PageCount();
+            const gap = 30; 
+            const cw = editor.clientWidth;
+            const cg = gap + (document.getElementById('chkFrame').checked ? 60 : 0) + 80;
+            const pages = Math.max(1, Math.round((editor.scrollWidth + cg) / (cw + cg)));
+            
             document.getElementById('pageIndicator').innerText = `${currentPageIndex + 1} / ${pages}`;
             document.getElementById('pageCount').innerText = pages;
         }
@@ -817,7 +590,10 @@
 
         function prevPage() { if (currentPageIndex > 0) scrollToPage(currentPageIndex - 1); }
         function nextPage() {
-            const pages = 1 + getEditor2PageCount();
+            const gap = 30;
+            const cw = editor.clientWidth;
+            const cg = gap + (document.getElementById('chkFrame').checked ? 60 : 0) + 80;
+            const pages = Math.max(1, Math.round((editor.scrollWidth + cg) / (cw + cg)));
             if (currentPageIndex < pages - 1) scrollToPage(currentPageIndex + 1);
         }
 
@@ -864,66 +640,35 @@
             }
         });
 
-        // editor1: 입력 → 오버플로 동기화 + 삭제 시 editor2에서 끌어오기
-        editor1.addEventListener('input', () => {
-            syncOverflow();
-            pullFromEditor2();
-            localStorage.setItem('a6_content_auto', combinedHTML());
+        editor.addEventListener('input', () => {
+            localStorage.setItem('a6_content_auto', editor.innerHTML);
             updateStats();
             checkPages(); 
             setTimeout(scrollToCursor, 100); 
         });
 
-        // editor2: 입력 → editor1에 빈 자리 있으면 끌어오기
-        editor2.addEventListener('input', () => {
-            // 사용자가 editor2에서 지웠을 때만 풀백 (편의상 매번 시도)
-            pullFromEditor2();
-            localStorage.setItem('a6_content_auto', combinedHTML());
-            updateStats();
-            checkPages(); 
-            setTimeout(scrollToCursor, 100); 
-        });
-
-        // editor2 맨 앞에서 Backspace → editor1 끝으로 커서 이동
-        editor2.addEventListener('keydown', (e) => {
-            if (e.key === 'Backspace') {
-                const sel = window.getSelection();
-                if (sel.rangeCount && sel.getRangeAt(0).collapsed) {
-                    if (getCursorCharOffset(editor2) === 0) {
-                        e.preventDefault();
-                        editor1.focus();
-                        const r = document.createRange(); r.selectNodeContents(editor1); r.collapse(false);
-                        sel.removeAllRanges(); sel.addRange(r);
-                    }
-                }
+        editor.addEventListener('keyup', (e) => {
+            if(['ArrowRight', 'ArrowLeft', 'ArrowDown', 'ArrowUp', 'Enter'].includes(e.key)) {
+                setTimeout(scrollToCursor, 50);
             }
         });
-
-        [editor1, editor2].forEach(ed => {
-            ed.addEventListener('keyup', (e) => {
-                if(['ArrowRight', 'ArrowLeft', 'ArrowDown', 'ArrowUp', 'Enter'].includes(e.key)) {
-                    setTimeout(scrollToCursor, 50);
-                }
-            });
-            ed.addEventListener('click', () => { setTimeout(scrollToCursor, 50); });
-        });
+        editor.addEventListener('click', () => { setTimeout(scrollToCursor, 50); });
         
         function updateStats() {
-            const text = (editor1.innerText || "") + (editor2.innerText || "");
+            const text = editor.innerText || "";
             const chars = text.replace(/\s/g, '').length;
             document.getElementById('charCount').innerText = chars;
         }
 
-        function saveManual() { localStorage.setItem('a6_content_manual', combinedHTML()); alert("수동 저장되었습니다."); }
+        function saveManual() { localStorage.setItem('a6_content_manual', editor.innerHTML); alert("수동 저장되었습니다."); }
         function loadManual() {
             const saved = localStorage.getItem('a6_content_manual');
-            if(saved) { setCombinedHTML(saved); updateStats(); checkPages(); }
+            if(saved) { editor.innerHTML = saved; updateStats(); checkPages(); }
             else alert("저장된 내용이 없습니다.");
         }
         function clearManual() {
             if(confirm("에디터 내용을 모두 지우시겠습니까?")) {
-                editor1.innerHTML = ''; editor2.innerHTML = '';
-                localStorage.removeItem('a6_content_auto');
+                editor.innerHTML = ''; localStorage.removeItem('a6_content_auto');
                 updateStats(); checkPages(); scrollToPage(0);
             }
         }
@@ -969,10 +714,7 @@
             scrollToPage(currentPageIndex);
         });
 
-        // 모바일 & 2페이지 이상 레이아웃 로직
-        // ⚠️ CSS 다단(multi-column)은 컬럼별로 다른 높이를 가질 수 없으므로
-        //    카피라이트가 켜져 있으면 모든 페이지 하단에 동일한 여백이 생깁니다 (기술적 한계).
-        //    → 카피라이트 OFF 시 --copy-space=0 으로 모든 페이지 풀 높이 사용 가능
+        // 🔥 모바일 & 2페이지 이상 레이아웃 로직 (가상 Float 블록 적용)
         function updateLayout() {
             const hasFrame = document.getElementById('chkFrame').checked;
             const hasTitle = document.getElementById('chkTitle').checked;
@@ -989,7 +731,7 @@
             const tBox = document.getElementById('title-box');
             if(hasTitle) {
                 tBox.classList.remove('hidden'); 
-                root.style.setProperty('--title-space-extra', '80px'); // 첫 단에만 80px float 기둥
+                root.style.setProperty('--title-space-extra', '80px'); // 첫 단에만 80px 기둥 생성
             } else {
                 tBox.classList.add('hidden'); 
                 root.style.setProperty('--title-space-extra', '0px');
@@ -1001,11 +743,10 @@
                 root.style.setProperty('--copy-space', '45px');
             } else {
                 cBox.classList.add('hidden'); 
-                root.style.setProperty('--copy-space', '0px');
+                root.style.setProperty('--copy-space', '20px');
             }
             
-            // editor1 높이가 바뀌므로 재분포 (프레임/제목/카피라이트 토글 모두 영향)
-            setTimeout(() => { redistribute(); checkPages(); }, 50);
+            setTimeout(checkPages, 50);
         }
 
         function setMode(m) {
@@ -1019,15 +760,10 @@
             root.style.setProperty('--a6-h', isL ? '420px' : '595px');
             
             calcZoomScale(); 
-            // 방향 전환 시 editor1 높이가 바뀌므로 재분포 필요
-            setTimeout(() => { redistribute(); checkPages(); scrollToPage(0); }, 100);
+            setTimeout(() => { checkPages(); scrollToPage(0); }, 100);
         }
 
-        function updateTypo() { 
-            const f = document.getElementById('fontSel').value;
-            editor1.style.fontFamily = f;
-            editor2.style.fontFamily = f;
-        }
+        function updateTypo() { editor.style.fontFamily = document.getElementById('fontSel').value; }
 
         function applyFmt(cmd, id) {
             let val = id === 'transparent' ? 'transparent' : (id ? document.getElementById(id).value : null);
@@ -1037,23 +773,14 @@
             } else {
                 document.execCommand(cmd, false, val);
             }
-            // 포맷 적용 후 활성 에디터에 포커스 유지
-            (document.activeElement === editor2 ? editor2 : editor1).focus();
+            editor.focus();
         }
 
         function resetTextColor() {
             document.execCommand('styleWithCSS', false, true);
             const isDark = root.getAttribute('data-theme') === 'dark';
             document.execCommand('foreColor', false, isDark ? '#f4f4f5' : '#27272a');
-            (document.activeElement === editor2 ? editor2 : editor1).focus();
-        }
-
-        // editor1 높이가 바뀌면(레이아웃/방향 변경) 분포 재계산
-        function redistribute() {
-            // editor1이 비어있고 editor2에 내용이 있으면 끌어오기
-            // editor1이 오버플로면 editor2로 보내기
-            pullFromEditor2();
-            syncOverflow();
+            editor.focus();
         }
 
         function bindLongPress(el, type, color) {
@@ -1178,15 +905,15 @@
         }
 
         const observer = new ResizeObserver(() => checkPages());
-        observer.observe(editor1);
-        observer.observe(editor2);
+        observer.observe(editor);
 
         function checkPages() {
             const w = isL ? 595 : 420;
             const h = isL ? 420 : 595;
             const gap = 30;
-            
-            const pages = 1 + getEditor2PageCount();
+            const cw = editor.clientWidth;
+            const cg = gap + (document.getElementById('chkFrame').checked ? 60 : 0) + 80;
+            const pages = Math.max(1, Math.round((editor.scrollWidth + cg) / (cw + cg)));
             
             while(bgLayer.children.length < pages) {
                 const p = document.createElement('div'); p.className = 'page-bg'; p.innerHTML = `<div class="page-paper"></div>`;
