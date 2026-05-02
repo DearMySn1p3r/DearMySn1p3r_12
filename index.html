@@ -218,7 +218,7 @@
            '첫 번째 단(첫 페이지)'의 맨 위에만 투명한 Float 기둥을 세워서 
            첫 페이지만 글씨가 밑으로 밀리도록 마법처럼 처리합니다! */
         .editor {
-            height: calc(var(--a6-h) - (var(--frame-pad) * 2) - 30px);
+            height: calc(var(--a6-h) - (var(--frame-pad) * 2) - 30px - var(--copy-space));
             width: calc(var(--a6-w) - (var(--frame-pad) * 2) - 80px); 
             margin-top: calc(var(--frame-pad) + 30px); 
             margin-left: calc(var(--frame-pad) + 40px);
@@ -243,20 +243,6 @@
             text-indent: 0;
         }
 
-        /* JS가 첫 번째 자식으로 삽입하는 카피라이트 공간 확보 spacer */
-        .copyright-spacer {
-            display: block !important;
-            float: left !important;
-            clear: left !important;
-            width: 100% !important;
-            pointer-events: none !important;
-            user-select: none !important;
-            -webkit-user-select: none !important;
-            font-size: 0 !important;
-            line-height: 0 !important;
-            caret-color: transparent;
-        }
-        
         .editor div, .editor p { text-indent: 1.2em; margin: 0; }
 
         .page-controls {
@@ -519,7 +505,6 @@
             
             const saved = localStorage.getItem('a6_content_auto');
             if(saved) editor.innerHTML = saved;
-            updateCopyrightSpacer();
             
             if (window.innerWidth >= 1100) {
                 sidebar.classList.remove('collapsed');
@@ -657,7 +642,7 @@
         });
 
         editor.addEventListener('input', () => {
-            localStorage.setItem('a6_content_auto', getCleanHTML());
+            localStorage.setItem('a6_content_auto', editor.innerHTML);
             updateStats();
             checkPages(); 
             setTimeout(scrollToCursor, 100); 
@@ -676,23 +661,15 @@
             document.getElementById('charCount').innerText = chars;
         }
 
-        function getCleanHTML() {
-            const clone = editor.cloneNode(true);
-            const spacer = clone.querySelector('.copyright-spacer');
-            if (spacer) spacer.remove();
-            return clone.innerHTML;
-        }
-
-        function saveManual() { localStorage.setItem('a6_content_manual', getCleanHTML()); alert("수동 저장되었습니다."); }
+        function saveManual() { localStorage.setItem('a6_content_manual', editor.innerHTML); alert("수동 저장되었습니다."); }
         function loadManual() {
             const saved = localStorage.getItem('a6_content_manual');
-            if(saved) { editor.innerHTML = saved; updateCopyrightSpacer(); updateStats(); checkPages(); }
+            if(saved) { editor.innerHTML = saved; updateStats(); checkPages(); }
             else alert("저장된 내용이 없습니다.");
         }
         function clearManual() {
             if(confirm("에디터 내용을 모두 지우시겠습니까?")) {
                 editor.innerHTML = ''; localStorage.removeItem('a6_content_auto');
-                updateCopyrightSpacer();
                 updateStats(); checkPages(); scrollToPage(0);
             }
         }
@@ -738,7 +715,10 @@
             scrollToPage(currentPageIndex);
         });
 
-        // 🔥 모바일 & 2페이지 이상 레이아웃 로직 (가상 Float 블록 적용)
+        // 모바일 & 2페이지 이상 레이아웃 로직
+        // ⚠️ CSS 다단(multi-column)은 컬럼별로 다른 높이를 가질 수 없으므로
+        //    카피라이트가 켜져 있으면 모든 페이지 하단에 동일한 여백이 생깁니다 (기술적 한계).
+        //    → 카피라이트 OFF 시 --copy-space=0 으로 모든 페이지 풀 높이 사용 가능
         function updateLayout() {
             const hasFrame = document.getElementById('chkFrame').checked;
             const hasTitle = document.getElementById('chkTitle').checked;
@@ -755,7 +735,7 @@
             const tBox = document.getElementById('title-box');
             if(hasTitle) {
                 tBox.classList.remove('hidden'); 
-                root.style.setProperty('--title-space-extra', '80px');
+                root.style.setProperty('--title-space-extra', '80px'); // 첫 단에만 80px float 기둥
             } else {
                 tBox.classList.add('hidden'); 
                 root.style.setProperty('--title-space-extra', '0px');
@@ -764,51 +744,14 @@
             const cBox = document.getElementById('copyright-box');
             if(hasCopy) {
                 cBox.classList.remove('hidden'); 
+                root.style.setProperty('--copy-space', '45px');
             } else {
                 cBox.classList.add('hidden'); 
+                root.style.setProperty('--copy-space', '0px');
             }
-
-            updateCopyrightSpacer();
+            
             setTimeout(checkPages, 50);
         }
-
-        // ✅ 카피라이트 공간을 첫 번째 단 하단에만 확보하는 DOM spacer 삽입
-        // ::after 가상 요소는 컬럼이 여러 개일 때 마지막 단으로 밀려나므로 실제 DOM 노드를 사용
-        let _spacerLock = false;
-        function updateCopyrightSpacer() {
-            _spacerLock = true;
-            const existing = editor.querySelector('.copyright-spacer');
-            if (existing) existing.remove();
-
-            const hasCopy = document.getElementById('chkCopy').checked;
-            if (hasCopy) {
-                const framePad = document.getElementById('chkFrame').checked ? 30 : 0;
-                const a6h = isL ? 420 : 595;
-                const hasTitle = document.getElementById('chkTitle').checked;
-                const titleSpace = hasTitle ? 80 : 0;
-                const copySpace = 45;
-                const columnHeight = a6h - framePad * 2 - 30;
-                const marginTop = Math.max(0, columnHeight - titleSpace - copySpace);
-
-                const spacer = document.createElement('span');
-                spacer.className = 'copyright-spacer';
-                spacer.contentEditable = 'false';
-                spacer.setAttribute('aria-hidden', 'true');
-                spacer.style.height = copySpace + 'px';
-                spacer.style.marginTop = marginTop + 'px';
-                editor.insertBefore(spacer, editor.firstChild);
-            }
-            _spacerLock = false;
-        }
-
-        // spacer가 사용자에 의해 지워지면 자동 복원
-        const _spacerObserver = new MutationObserver(() => {
-            if (_spacerLock) return;
-            if (!editor.querySelector('.copyright-spacer') && document.getElementById('chkCopy').checked) {
-                updateCopyrightSpacer();
-            }
-        });
-        _spacerObserver.observe(editor, { childList: true });
 
         function setMode(m) {
             isL = (m === 'L');
@@ -821,7 +764,7 @@
             root.style.setProperty('--a6-h', isL ? '420px' : '595px');
             
             calcZoomScale(); 
-            setTimeout(() => { updateCopyrightSpacer(); checkPages(); scrollToPage(0); }, 100);
+            setTimeout(() => { checkPages(); scrollToPage(0); }, 100);
         }
 
         function updateTypo() { editor.style.fontFamily = document.getElementById('fontSel').value; }
