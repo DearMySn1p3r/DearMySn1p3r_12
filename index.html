@@ -769,20 +769,31 @@
 
         function applyFmt(cmd, id) {
             let val = id === 'transparent' ? 'transparent' : (id ? document.getElementById(id).value : null);
+            // 🔥 포커스 이동으로 인한 자동 스크롤(첫 페이지로 튀는 현상) 방지를 위해 현재 스크롤 위치 저장
+            const prevScrollLeft = workspace.scrollLeft;
+            const prevScrollTop = workspace.scrollTop;
             document.execCommand('styleWithCSS', false, true);
             if(cmd === 'hiliteColor' && !document.execCommand('hiliteColor', false, val)) {
                 document.execCommand('backColor', false, val);
             } else {
                 document.execCommand(cmd, false, val);
             }
-            editor.focus();
+            // preventScroll로 브라우저의 기본 스크롤 동작을 차단
+            editor.focus({ preventScroll: true });
+            // 혹시라도 스크롤이 변했다면 즉시 복원 (구형 브라우저 대비)
+            workspace.scrollLeft = prevScrollLeft;
+            workspace.scrollTop = prevScrollTop;
         }
 
         function resetTextColor() {
+            const prevScrollLeft = workspace.scrollLeft;
+            const prevScrollTop = workspace.scrollTop;
             document.execCommand('styleWithCSS', false, true);
             const isDark = root.getAttribute('data-theme') === 'dark';
             document.execCommand('foreColor', false, isDark ? '#f4f4f5' : '#27272a');
-            editor.focus();
+            editor.focus({ preventScroll: true });
+            workspace.scrollLeft = prevScrollLeft;
+            workspace.scrollTop = prevScrollTop;
         }
 
         function bindLongPress(el, type, color) {
