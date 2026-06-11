@@ -975,84 +975,87 @@
             window.scrollTo(0, 0); 
             ws.scrollTo(0, 0);
 
-            // 🔥 형광펜 줄바꿈 박스 깨짐 및 세로 중앙 정렬 보정
+            // 🔥 형광펜 보정 준비 (라이브 editor는 절대 수정하지 않음)
+            // editor.innerHTML을 읽었다 다시 써넣는 라운드트립이 contenteditable + white-space:pre-wrap
+            // 환경에서 문단 사이에 빈 줄을 끼워넣어 "저장 후 화면 공백" 버그를 일으켰음.
+            // 따라서 여기서는 멀티라인 여부만 읽어두고(getClientRects는 읽기 전용),
+            // 실제 padding/모서리 보정은 아래 html2canvas의 onclone(복제본)에서만 수행한다.
             const editor = document.getElementById('editor');
-            const originalHTML = editor.innerHTML; 
-            const spansToFix = Array.from(editor.querySelectorAll('span')).filter(s => s.style.backgroundColor && s.style.backgroundColor !== 'transparent' && s.style.backgroundColor !== 'rgba(0, 0, 0, 0)');
-            
-            // 🔥 형광펜 세로 정렬 보정
-            // 화면 CSS와 동일한 padding/border-radius를 export 시점에도 적용 (export 중에는 CSS 비활성화됨).
-            // - 위쪽 패딩 0, 아래쪽 패딩 4로 글자가 시각적 중앙에 오도록 보정
-            // - 단일 라인은 원본 span에 직접 적용, 멀티 라인은 줄바꿈 박스 깨짐 방지를 위해 글자별로 쪼갬
-            spansToFix.forEach(span => {
-                const bg = span.style.backgroundColor;
-
-                if (span.getClientRects().length > 1) { 
-                    // 멀티 라인: 글자별로 쪼개서 처리
-                    span.style.backgroundColor = 'transparent';
-                    const walker = document.createTreeWalker(span, NodeFilter.SHOW_TEXT, null, false);
-                    let node;
-                    const textNodes = [];
-                    while ((node = walker.nextNode())) { textNodes.push(node); }
-                    
-                    textNodes.forEach(textNode => {
-                        const text = textNode.nodeValue;
-                        if (!text) return;
-                        const fragment = document.createDocumentFragment();
-                        
-                        for (let i = 0; i < text.length; i++) {
-                            const charSpan = document.createElement('span');
-                            charSpan.style.backgroundColor = bg;
-                            charSpan.style.paddingTop = '0px';
-                            charSpan.style.paddingBottom = '4px';
-                            
-                            // 첫 글자와 끝 글자 모서리 둥글게 처리
-                            if (i === 0) {
-                                charSpan.style.paddingLeft = '2px';
-                                charSpan.style.borderTopLeftRadius = '4px';
-                                charSpan.style.borderBottomLeftRadius = '4px';
-                            }
-                            if (i === text.length - 1) {
-                                charSpan.style.paddingRight = '2px';
-                                charSpan.style.borderTopRightRadius = '4px';
-                                charSpan.style.borderBottomRightRadius = '4px';
-                            }
-
-                            charSpan.textContent = text[i];
-                            fragment.appendChild(charSpan);
-                        }
-                        textNode.parentNode.replaceChild(fragment, textNode);
-                    });
-                } else {
-                    // 단일 라인: 원본 span에 padding/border-radius 직접 적용
-                    span.style.padding = '0 2px 4px 2px';
-                    span.style.borderRadius = '4px';
-                }
-            });
+            const liveHlSpans = Array.from(editor.querySelectorAll('span')).filter(s => s.style.backgroundColor && s.style.backgroundColor !== 'transparent' && s.style.backgroundColor !== 'rgba(0, 0, 0, 0)');
+            const multiLineFlags = liveHlSpans.map(s => s.getClientRects().length > 1);
 
             await new Promise(r => setTimeout(r, 150));
 
-            const wideCanvas = await html2canvas(cvs, { 
-                scale: 2, 
-                useCORS: true, 
-                backgroundColor: null, 
-                scrollX: 0, 
-                scrollY: 0,
-                width: cvs.offsetWidth,
-                height: cvs.offsetHeight,
-                windowWidth: cvs.offsetWidth + 200 
-            });
-
-            editor.innerHTML = originalHTML;
-
-            zoomWrap.style.transform = originTransform;
-            scalePlaceholder.style.width = originPW;
-            scalePlaceholder.style.height = originPH;
-            ws.style.overflow = originWsOverflow;
-            sc.style.overflow = '';
-            document.body.style.overflow = '';
-
-            document.body.classList.remove('is-exporting'); 
+            let wideCanvas;
+            try {
+                wideCanvas = await html2canvas(cvs, { 
+                    scale: 2, 
+                    useCORS: true, 
+                    backgroundColor: null, 
+                    scrollX: 0, 
+                    scrollY: 0,
+                    width: cvs.offsetWidth,
+                    height: cvs.offsetHeight,
+                    windowWidth: cvs.offsetWidth + 200,
+                    onclone: (clonedDoc) => {
+                        // 복제본에만 형광펜 보정 적용 (라이브 화면은 그대로 둔다).
+                        // 복제본 body에 is-exporting을 달아 화면용 형광펜 CSS를 끈 뒤 수동 padding 적용 → 중복 방지.
+                        if (clonedDoc.body) clonedDoc.body.classList.add('is-exporting');
+                        const clonedEditor = clonedDoc.getElementById('editor');
+                        if (!clonedEditor) return;
+                        const spans = Array.from(clonedEditor.querySelectorAll('span')).filter(s => s.style.backgroundColor && s.style.backgroundColor !== 'transparent' && s.style.backgroundColor !== 'rgba(0, 0, 0, 0)');
+                        spans.forEach((span, idx) => {
+                            const bg = span.style.backgroundColor;
+                            if (multiLineFlags[idx]) {
+                                // 멀티 라인: 글자별로 쪼개서 줄바꿈 박스 깨짐 방지
+                                span.style.backgroundColor = 'transparent';
+                                const walker = clonedDoc.createTreeWalker(span, NodeFilter.SHOW_TEXT, null, false);
+                                let node;
+                                const textNodes = [];
+                                while ((node = walker.nextNode())) { textNodes.push(node); }
+                                textNodes.forEach(textNode => {
+                                    const text = textNode.nodeValue;
+                                    if (!text) return;
+                                    const fragment = clonedDoc.createDocumentFragment();
+                                    for (let i = 0; i < text.length; i++) {
+                                        const charSpan = clonedDoc.createElement('span');
+                                        charSpan.style.backgroundColor = bg;
+                                        charSpan.style.paddingTop = '0px';
+                                        charSpan.style.paddingBottom = '4px';
+                                        if (i === 0) {
+                                            charSpan.style.paddingLeft = '2px';
+                                            charSpan.style.borderTopLeftRadius = '4px';
+                                            charSpan.style.borderBottomLeftRadius = '4px';
+                                        }
+                                        if (i === text.length - 1) {
+                                            charSpan.style.paddingRight = '2px';
+                                            charSpan.style.borderTopRightRadius = '4px';
+                                            charSpan.style.borderBottomRightRadius = '4px';
+                                        }
+                                        charSpan.textContent = text[i];
+                                        fragment.appendChild(charSpan);
+                                    }
+                                    textNode.parentNode.replaceChild(fragment, textNode);
+                                });
+                            } else {
+                                // 단일 라인: 복제본 span에 padding/border-radius 직접 적용
+                                span.style.padding = '0 2px 4px 2px';
+                                span.style.borderRadius = '4px';
+                            }
+                        });
+                    }
+                });
+            } finally {
+                // 라이브 editor 내용은 건드리지 않았으므로 복원 불필요.
+                // 레이아웃용 임시 스타일만 항상 원복 (캡처가 실패해도 화면이 멈추지 않도록 finally 처리).
+                zoomWrap.style.transform = originTransform;
+                scalePlaceholder.style.width = originPW;
+                scalePlaceholder.style.height = originPH;
+                ws.style.overflow = originWsOverflow;
+                sc.style.overflow = '';
+                document.body.style.overflow = '';
+                document.body.classList.remove('is-exporting'); 
+            }
 
             return wideCanvas;
         }
@@ -1065,26 +1068,28 @@
             btn1.style.pointerEvents = 'none'; btn2.style.pointerEvents = 'none';
             document.querySelector('.page-controls').style.display = 'none';
 
-            const wideCanvas = await captureWideCanvas();
+            try {
+                const wideCanvas = await captureWideCanvas();
 
-            const w = isL ? 595 : 420; const h = isL ? 420 : 595; const gap = 30;
-            const pages = bgLayer.children.length;
+                const w = isL ? 595 : 420; const h = isL ? 420 : 595; const gap = 30;
+                const pages = bgLayer.children.length;
 
-            for (let i = 0; i < pages; i++) {
-                const sc = document.createElement('canvas'); sc.width = w * 2; sc.height = h * 2;
-                const ctx = sc.getContext('2d');
-                ctx.drawImage(wideCanvas, i * (w + gap) * 2, 0, w * 2, h * 2, 0, 0, w * 2, h * 2);
-                
-                const link = document.createElement('a'); link.download = `Log_Archive_p${i + 1}.png`;
-                link.href = sc.toDataURL('image/png'); link.click();
-                
-                await new Promise(r => setTimeout(r, 450));
+                for (let i = 0; i < pages; i++) {
+                    const sc = document.createElement('canvas'); sc.width = w * 2; sc.height = h * 2;
+                    const ctx = sc.getContext('2d');
+                    ctx.drawImage(wideCanvas, i * (w + gap) * 2, 0, w * 2, h * 2, 0, 0, w * 2, h * 2);
+                    
+                    const link = document.createElement('a'); link.download = `Log_Archive_p${i + 1}.png`;
+                    link.href = sc.toDataURL('image/png'); link.click();
+                    
+                    await new Promise(r => setTimeout(r, 450));
+                }
+            } finally {
+                document.querySelector('.page-controls').style.display = 'flex';
+                btn2.innerText = oTxt; 
+                btn1.style.pointerEvents = 'auto'; btn2.style.pointerEvents = 'auto';
+                scrollToPage(currentPageIndex);
             }
-
-            document.querySelector('.page-controls').style.display = 'flex';
-            btn2.innerText = oTxt; 
-            btn1.style.pointerEvents = 'auto'; btn2.style.pointerEvents = 'auto';
-            scrollToPage(currentPageIndex);
         }
 
         async function exportCurrentPage() {
@@ -1095,22 +1100,24 @@
             btn1.style.pointerEvents = 'none'; btn2.style.pointerEvents = 'none';
             document.querySelector('.page-controls').style.display = 'none';
 
-            const wideCanvas = await captureWideCanvas();
+            try {
+                const wideCanvas = await captureWideCanvas();
 
-            const w = isL ? 595 : 420; const h = isL ? 420 : 595; const gap = 30;
-            const i = currentPageIndex;
-            
-            const sc = document.createElement('canvas'); sc.width = w * 2; sc.height = h * 2;
-            const ctx = sc.getContext('2d');
-            ctx.drawImage(wideCanvas, i * (w + gap) * 2, 0, w * 2, h * 2, 0, 0, w * 2, h * 2);
-            
-            const link = document.createElement('a'); link.download = `Log_Archive_p${i + 1}.png`;
-            link.href = sc.toDataURL('image/png'); link.click();
-
-            document.querySelector('.page-controls').style.display = 'flex';
-            btn1.innerText = oTxt; 
-            btn1.style.pointerEvents = 'auto'; btn2.style.pointerEvents = 'auto';
-            scrollToPage(currentPageIndex);
+                const w = isL ? 595 : 420; const h = isL ? 420 : 595; const gap = 30;
+                const i = currentPageIndex;
+                
+                const sc = document.createElement('canvas'); sc.width = w * 2; sc.height = h * 2;
+                const ctx = sc.getContext('2d');
+                ctx.drawImage(wideCanvas, i * (w + gap) * 2, 0, w * 2, h * 2, 0, 0, w * 2, h * 2);
+                
+                const link = document.createElement('a'); link.download = `Log_Archive_p${i + 1}.png`;
+                link.href = sc.toDataURL('image/png'); link.click();
+            } finally {
+                document.querySelector('.page-controls').style.display = 'flex';
+                btn1.innerText = oTxt; 
+                btn1.style.pointerEvents = 'auto'; btn2.style.pointerEvents = 'auto';
+                scrollToPage(currentPageIndex);
+            }
         }
     </script>
 </body>
