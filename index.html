@@ -39,6 +39,16 @@
             
             --sidebar-width: 340px;
             --zoom-scale: 1.5; 
+
+            /* [NEW] 본문 타이포 세부 조정 변수 */
+            --ed-size: 10.5px;
+            --ed-track: -0.5px;   /* 자간 */
+            --ed-leading: 1.7;    /* 행간 */
+            --ed-indent: 1.2em;   /* 첫 줄 들여쓰기 */
+            --ed-align: justify;  /* 정렬 */
+            --title-size: 1.6rem;
+            --sub-size: 0.75rem;
+            --copy-size: 0.8rem;
         }
 
         [data-theme="dark"] {
@@ -123,6 +133,27 @@
         .swatch:hover { transform: scale(1.15); border-color: var(--text-muted); }
         .btn-add { padding: 8px; font-size: 0.75rem; background: transparent; border: 1px dashed var(--border); color: var(--text-muted); font-weight: 500; border-radius: 8px; transition: 0.2s;}
         .btn-add:hover { border-color: var(--text-muted); color: var(--text-ui); }
+
+        /* [NEW] 세부 조정 슬라이더 */
+        .slider-row { display: grid; grid-template-columns: 1fr auto; align-items: center; gap: 10px; }
+        .slider-row .lbl { font-size: 0.75rem; color: var(--text-muted); font-weight: 500; }
+        .slider-row .val { font-size: 0.72rem; font-weight: 700; color: var(--text-ui); min-width: 52px; text-align: right; font-variant-numeric: tabular-nums; }
+        input[type="range"] { -webkit-appearance: none; appearance: none; width: 100%; height: 4px; border-radius: 4px; background: var(--border); outline: none; cursor: pointer; grid-column: 1 / -1; margin: 2px 0 4px; }
+        input[type="range"]::-webkit-slider-thumb { -webkit-appearance: none; appearance: none; width: 14px; height: 14px; border-radius: 50%; background: var(--accent); cursor: pointer; border: 2px solid var(--bg-panel); box-shadow: 0 1px 4px rgba(0,0,0,0.2); }
+        input[type="range"]::-moz-range-thumb { width: 12px; height: 12px; border-radius: 50%; background: var(--accent); cursor: pointer; border: 2px solid var(--bg-panel); }
+        .seg { display: flex; gap: 4px; background: var(--bg-body); padding: 4px; border-radius: 8px; }
+        .seg button { flex: 1; padding: 7px 4px; font-size: 0.72rem; border: none; background: transparent; border-radius: 6px; font-weight: 500; }
+        .seg button.on { background: var(--bg-panel); font-weight: 700; box-shadow: 0 1px 3px rgba(0,0,0,0.06); }
+
+        /* [NEW] 토스트 알림 */
+        #toast {
+            position: fixed; bottom: 100px; left: 50%; transform: translateX(-50%) translateY(20px);
+            background: var(--accent); color: var(--accent-text); padding: 11px 20px; border-radius: 30px;
+            font-size: 0.8rem; font-weight: 600; z-index: 3000; pointer-events: none;
+            opacity: 0; transition: opacity 0.25s ease, transform 0.25s ease;
+            box-shadow: 0 6px 20px rgba(0,0,0,0.18); white-space: nowrap;
+        }
+        #toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
         
         .switch { position: relative; display: inline-block; width: 36px; height: 20px; flex-shrink: 0;}
         .switch input { opacity: 0; width: 0; height: 0; }
@@ -177,7 +208,7 @@
         }
         .main-title { 
             display: block; font-family: 'Cormorant Garamond', 'Nanum Myeongjo', serif;
-            font-size: 1.6rem; font-weight: 800; 
+            font-size: var(--title-size); font-weight: 800; 
             color: var(--meta-title-color, var(--text-ui)); 
             outline: none; 
             margin: 0 auto 4px auto; 
@@ -191,7 +222,7 @@
         
         .sub-title { 
             display: block; font-family: 'Pretendard', sans-serif;
-            font-size: 0.75rem; 
+            font-size: var(--sub-size); 
             color: var(--meta-sub-color, var(--text-muted)); 
             outline: none; font-weight: 400; letter-spacing: 0px; 
             width: 100%; text-align: center !important;
@@ -201,7 +232,7 @@
         .copyright-box {
             position: absolute; bottom: calc(var(--frame-pad) + 15px); left: 0; right: 0; margin: 0 auto;
             width: calc(var(--a6-w) - (var(--frame-pad) * 2)); text-align: center !important; pointer-events: auto;
-            font-size: 0.8rem; 
+            font-size: var(--copy-size); 
             color: var(--meta-sub-color, var(--text-muted)); 
             outline: none;
             transition: color 0.3s;
@@ -226,9 +257,10 @@
             
             box-sizing: border-box; padding: 0;
             outline: none; text-align: justify; white-space: pre-wrap; word-break: break-all;
-            font-size: 10.5px; 
-            letter-spacing: -0.5px; line-height: 1.7;
-            color: var(--text-ui); text-indent: 1.2em;
+            font-size: var(--ed-size); 
+            letter-spacing: var(--ed-track); line-height: var(--ed-leading);
+            color: var(--text-ui); text-indent: var(--ed-indent);
+            text-align: var(--ed-align);
             transition: height 0.3s;
         }
         
@@ -241,7 +273,7 @@
             text-indent: 0;
         }
         
-        .editor div, .editor p { text-indent: 1.2em; margin: 0; }
+        .editor div, .editor p { text-indent: var(--ed-indent); margin: 0; }
 
         .page-controls {
             position: fixed; bottom: 35px; left: calc(50% + calc(var(--sidebar-width) / 2)); transform: translateX(-50%);
@@ -314,6 +346,62 @@
                         </optgroup>
                     </select>
                 </div>
+
+                <!-- [NEW] 글씨 세부 조정 -->
+                <div class="item" style="border-top:1px dashed var(--border); padding-top:15px;">
+                    <label>본문 세부 조정 <span id="typoReset" style="cursor:pointer; text-decoration:underline;">기본값으로</span></label>
+
+                    <div class="slider-row">
+                        <span class="lbl">글자 크기</span>
+                        <span class="val" id="vSize">10.5px</span>
+                        <input type="range" id="rSize" min="6" max="24" step="0.5" value="10.5">
+                    </div>
+                    <div class="slider-row">
+                        <span class="lbl">자간</span>
+                        <span class="val" id="vTrack">-0.5px</span>
+                        <input type="range" id="rTrack" min="-2" max="3" step="0.1" value="-0.5">
+                    </div>
+                    <div class="slider-row">
+                        <span class="lbl">행간 (줄 간격)</span>
+                        <span class="val" id="vLead">1.7</span>
+                        <input type="range" id="rLead" min="1" max="3" step="0.05" value="1.7">
+                    </div>
+                    <div class="slider-row">
+                        <span class="lbl">첫 줄 들여쓰기</span>
+                        <span class="val" id="vIndent">1.2em</span>
+                        <input type="range" id="rIndent" min="0" max="3" step="0.1" value="1.2">
+                    </div>
+
+                    <div style="margin-top:6px;">
+                        <span class="lbl" style="font-size:0.75rem; color:var(--text-muted); font-weight:500;">문단 정렬</span>
+                        <div class="seg" id="alignSeg" style="margin-top:6px;">
+                            <button data-align="justify" class="on">양쪽</button>
+                            <button data-align="left">왼쪽</button>
+                            <button data-align="center">가운데</button>
+                            <button data-align="right">오른쪽</button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- [NEW] 제목/카피 글자 크기 -->
+                <div class="item" style="border-top:1px dashed var(--border); padding-top:15px;">
+                    <label>제목 / 카피라이트 크기</label>
+                    <div class="slider-row">
+                        <span class="lbl">메인 제목</span>
+                        <span class="val" id="vTitleSize">1.6rem</span>
+                        <input type="range" id="rTitleSize" min="0.8" max="3" step="0.05" value="1.6">
+                    </div>
+                    <div class="slider-row">
+                        <span class="lbl">부제 (Written by)</span>
+                        <span class="val" id="vSubSize">0.75rem</span>
+                        <input type="range" id="rSubSize" min="0.5" max="1.6" step="0.05" value="0.75">
+                    </div>
+                    <div class="slider-row">
+                        <span class="lbl">하단 카피라이트</span>
+                        <span class="val" id="vCopySize">0.8rem</span>
+                        <input type="range" id="rCopySize" min="0.5" max="1.6" step="0.05" value="0.8">
+                    </div>
+                </div>
                 
                 <div class="item">
                     <label>글자색 <span>(우클릭 또는 꾸욱 눌러 삭제)</span></label>
@@ -349,8 +437,8 @@
                         <button onclick="applyFmt('underline', null)" style="text-decoration:underline;">밑줄</button>
                     </div>
                     <div class="row" style="display:grid; grid-template-columns: 1fr 1fr 1fr; gap:6px; margin-top:2px;">
-                        <button onclick="document.execCommand('undo')" style="font-weight:500; font-size:0.75rem;">↩ 뒤로가기</button>
-                        <button onclick="document.execCommand('redo')" style="font-weight:500; font-size:0.75rem;">앞으로가기 ↪</button>
+                        <button onclick="doHistory('undo')" style="font-weight:500; font-size:0.75rem;">↩ 뒤로가기</button>
+                        <button onclick="doHistory('redo')" style="font-weight:500; font-size:0.75rem;">앞으로가기 ↪</button>
                         <button onclick="toggleQuotes()" style="font-weight:700; font-size:0.75rem; color:var(--accent);" title="직선 ↔ 곡선 따옴표 변환">" ↔ “ 변환</button>
                     </div>
                 </div>
@@ -454,6 +542,8 @@
                 <button id="btnExportCur" class="btn-primary" onclick="exportCurrentPage()" style="background:var(--bg-panel); color:var(--text-ui); border:1px solid var(--border); font-size:0.8rem; padding:12px;">현재 페이지만</button>
                 <button id="btnExportAll" class="btn-primary" onclick="exportAllPages()" style="font-size:0.8rem; padding:12px;">전체 자동 분할</button>
             </div>
+            <!-- [NEW] 현재 페이지를 이미지로 클립보드에 복사 -->
+            <button id="btnCopyCur" class="btn-primary" onclick="copyCurrentPage()" style="margin-top:8px; background:var(--bg-panel); color:var(--text-ui); border:1px solid var(--border); font-size:0.8rem; padding:12px;">📋 현재 페이지 이미지로 복사</button>
         </div>
     </div>
 
@@ -486,6 +576,8 @@
         <button onclick="nextPage()">▶</button>
     </div>
 
+    <div id="toast"></div>
+
     <script>
         const root = document.documentElement;
         const editor = document.getElementById('editor');
@@ -494,6 +586,9 @@
         const workspace = document.getElementById('workspace');
         const scrollContent = document.getElementById('scrollContent');
         const scalePlaceholder = document.getElementById('scalePlaceholder');
+        const mainTitle = document.getElementById('mainTitle');
+        const subTitle = document.querySelector('.sub-title');
+        const copyBox = document.getElementById('copyright-box');
         
         let isL = false;
         let currentPageIndex = 0;
@@ -501,21 +596,63 @@
         let globalPaperBgImg = 'none';
         let globalFrameBgImg = 'none';
 
-        let favTC = JSON.parse(localStorage.getItem('a6_v29_tc')) || ['#111111', '#8b0000', '#1e3a8a'];
-        let favHC = JSON.parse(localStorage.getItem('a6_v29_hc')) || ['#fef08a', '#bbf7d0', '#fbcfe8'];
+        // [FIX] 시크릿 모드 / 일부 file:// 환경에서는 localStorage 접근만으로 예외가 나서
+        //       스크립트 전체가 죽고 에디터가 아예 안 열렸음 → 안전 래퍼로 감쌈
+        const LS = {
+            get(k) { try { return localStorage.getItem(k); } catch (e) { return null; } },
+            set(k, v) { try { localStorage.setItem(k, v); return true; } catch (e) { return false; } },
+            remove(k) { try { localStorage.removeItem(k); } catch (e) {} }
+        };
+
+        // [FIX] localStorage 값이 깨져 있으면 JSON.parse가 예외를 던져 스크립트 전체가 중단됐음 → 안전 파싱
+        function safeParse(key, fallback) {
+            try {
+                const raw = LS.get(key);
+                if (!raw) return fallback;
+                const v = JSON.parse(raw);
+                return Array.isArray(v) ? v : fallback;
+            } catch (e) {
+                console.warn('저장된 값을 읽지 못해 기본값을 사용합니다:', key, e);
+                return fallback;
+            }
+        }
+
+        let favTC = safeParse('a6_v29_tc', ['#111111', '#8b0000', '#1e3a8a']);
+        let favHC = safeParse('a6_v29_hc', ['#fef08a', '#bbf7d0', '#fbcfe8']);
+
+        // [FIX] 페이지 수 계산이 checkPages / nextPage / updatePageIndicator 3곳에 복붙돼 있어
+        //       한 곳만 고치면 나머지가 어긋났음 → 단일 함수로 통합
+        function getPageCount() {
+            const gap = 30;
+            const cw = editor.clientWidth;
+            if (!cw) return 1;
+            const cg = gap + (document.getElementById('chkFrame').checked ? 60 : 0) + 80;
+            return Math.max(1, Math.round((editor.scrollWidth + cg) / (cw + cg)));
+        }
+
+        // [FIX] .scroll-content의 padding(데스크톱 50px / 모바일 20px) 때문에
+        //       페이지 0의 실제 x좌표가 0이 아닌데도 scrollLeft=0으로 계산해 페이지가 항상 어긋났음
+        function getBaseOffset() {
+            return scalePlaceholder.offsetLeft || 0;
+        }
 
         window.onload = () => { 
-            updateTypo();
+            loadTypo();          // [NEW] 저장된 글씨 세부 설정 복원
+            bindTypoControls();  // [NEW] 슬라이더/정렬 버튼 연결
             renderFavs();
             document.getElementById('chkFrame').checked = false;
             updateLayout(); 
             
-            const saved = localStorage.getItem('a6_content_auto');
+            loadMeta();
+            const saved = LS.get('a6_content_auto');
             if(saved) editor.innerHTML = saved;
             
-            if (window.innerWidth >= 768) {
+            // [FIX] onload는 768px, resize 핸들러는 1100px 기준이라 창을 조금만 줄여도
+            //       사이드바가 갑자기 닫히는 불일치가 있었음 → 1100px로 통일
+            if (window.innerWidth >= 1100) {
                 sidebar.classList.remove('collapsed');
             }
+            syncControlsPosition();
             
             calcZoomScale(); 
             checkPages(); 
@@ -570,38 +707,40 @@
                 n.nodeValue = val;
             });
 
-            localStorage.setItem('a6_content_auto', editor.innerHTML);
+            LS.set('a6_content_auto', editor.innerHTML);
             updateStats();
+            checkPages();
         }
 
         function updatePageIndicator() {
-            const gap = 30; 
-            const cw = editor.clientWidth;
-            const cg = gap + (document.getElementById('chkFrame').checked ? 60 : 0) + 80;
-            const pages = Math.max(1, Math.round((editor.scrollWidth + cg) / (cw + cg)));
-            
+            const pages = getPageCount();
+            // [FIX] 글을 지워 페이지 수가 줄어도 currentPageIndex가 그대로라 "5 / 3" 같은 표시가 나오고,
+            //       현재 페이지 내보내기가 빈 이미지로 나왔음 → 범위 밖이면 잘라줌
+            if (currentPageIndex > pages - 1) currentPageIndex = pages - 1;
+            if (currentPageIndex < 0) currentPageIndex = 0;
+
             document.getElementById('pageIndicator').innerText = `${currentPageIndex + 1} / ${pages}`;
             document.getElementById('pageCount').innerText = pages;
         }
 
         function scrollToPage(index) {
+            const pages = getPageCount();
+            index = Math.min(Math.max(0, index), pages - 1);
+
             const w = isL ? 595 : 420;
             const gap = 30;
             const scale = getScale();
             const scaledWidth = (w + gap) * scale;
             
-            workspace.scrollTo({ left: (index * scaledWidth), behavior: 'smooth' });
+            // [FIX] scroll-content의 좌측 padding을 더하지 않아 페이지가 항상 50px(모바일 20px) 밀려 보였음
+            workspace.scrollTo({ left: getBaseOffset() + (index * scaledWidth), behavior: 'smooth' });
             currentPageIndex = index;
             updatePageIndicator();
         }
 
         function prevPage() { if (currentPageIndex > 0) scrollToPage(currentPageIndex - 1); }
         function nextPage() {
-            const gap = 30;
-            const cw = editor.clientWidth;
-            const cg = gap + (document.getElementById('chkFrame').checked ? 60 : 0) + 80;
-            const pages = Math.max(1, Math.round((editor.scrollWidth + cg) / (cw + cg)));
-            if (currentPageIndex < pages - 1) scrollToPage(currentPageIndex + 1);
+            if (currentPageIndex < getPageCount() - 1) scrollToPage(currentPageIndex + 1);
         }
 
         function scrollToCursor() {
@@ -637,9 +776,13 @@
             const gap = 30;
             const scale = getScale();
             const scaledWidth = (w + gap) * scale;
-            const scrollLeft = workspace.scrollLeft;
-            
-            let newIndex = Math.round(Math.max(0, scrollLeft) / scaledWidth);
+            if (!scaledWidth) return;
+
+            // [FIX] baseOffset(=좌측 padding) 미반영으로 페이지 감지가 어긋나던 문제
+            const rel = workspace.scrollLeft - getBaseOffset();
+            const pages = getPageCount();
+            let newIndex = Math.round(Math.max(0, rel) / scaledWidth);
+            newIndex = Math.min(Math.max(0, newIndex), pages - 1);
             
             if(newIndex !== currentPageIndex) {
                 currentPageIndex = newIndex;
@@ -647,11 +790,55 @@
             }
         });
 
+        // [FIX] 키 입력 한 글자마다 localStorage에 통째로 쓰느라 긴 글에서 심하게 버벅였음 → 디바운스
+        let saveTimer = null;
+        function scheduleAutoSave() {
+            clearTimeout(saveTimer);
+            saveTimer = setTimeout(() => {
+                try {
+                    LS.set('a6_content_auto', editor.innerHTML);
+                    saveMeta();
+                } catch (e) {
+                    console.warn('자동 저장 실패(저장 공간 초과일 수 있습니다):', e);
+                }
+            }, 400);
+        }
+
+        // [FIX] 제목/부제/카피라이트는 어디에도 저장되지 않아 새로고침하면 전부 날아갔음
+        function saveMeta() {
+            try {
+                LS.set('a6_meta_auto', JSON.stringify({
+                    title: mainTitle.innerHTML,
+                    sub: subTitle.innerHTML,
+                    copy: copyBox.innerHTML
+                }));
+            } catch (e) { /* 저장 실패는 무시 */ }
+        }
+        function loadMeta() {
+            const m = safeParseObj('a6_meta_auto');
+            if (!m) return;
+            if (typeof m.title === 'string') mainTitle.innerHTML = m.title;
+            if (typeof m.sub === 'string') subTitle.innerHTML = m.sub;
+            if (typeof m.copy === 'string') copyBox.innerHTML = m.copy;
+        }
+        function safeParseObj(key) {
+            try {
+                const raw = LS.get(key);
+                if (!raw) return null;
+                const v = JSON.parse(raw);
+                return (v && typeof v === 'object') ? v : null;
+            } catch (e) { return null; }
+        }
+
         editor.addEventListener('input', () => {
-            localStorage.setItem('a6_content_auto', editor.innerHTML);
+            scheduleAutoSave();
             updateStats();
             checkPages(); 
             setTimeout(scrollToCursor, 100); 
+        });
+
+        [mainTitle, subTitle, copyBox].forEach(el => {
+            el.addEventListener('input', saveMeta);
         });
 
         editor.addEventListener('keyup', (e) => {
@@ -667,15 +854,33 @@
             document.getElementById('charCount').innerText = chars;
         }
 
-        function saveManual() { localStorage.setItem('a6_content_manual', editor.innerHTML); alert("수동 저장되었습니다."); }
+        function saveManual() {
+            const ok1 = LS.set('a6_content_manual', editor.innerHTML);
+            // [FIX] 수동저장이 본문만 저장하고 제목/카피라이트는 빼먹었음
+            const ok2 = LS.set('a6_meta_manual', JSON.stringify({
+                title: mainTitle.innerHTML, sub: subTitle.innerHTML, copy: copyBox.innerHTML
+            }));
+            if (ok1 && ok2) showToast("수동 저장되었습니다 ✓");
+            else alert("저장에 실패했습니다. 브라우저 저장 공간이 가득 찼거나 시크릿 모드일 수 있습니다.");
+        }
         function loadManual() {
-            const saved = localStorage.getItem('a6_content_manual');
-            if(saved) { editor.innerHTML = saved; updateStats(); checkPages(); }
-            else alert("저장된 내용이 없습니다.");
+            const saved = LS.get('a6_content_manual');
+            if(saved === null) { alert("저장된 내용이 없습니다."); return; }
+            editor.innerHTML = saved;
+            const m = safeParseObj('a6_meta_manual');
+            if (m) {
+                if (typeof m.title === 'string') mainTitle.innerHTML = m.title;
+                if (typeof m.sub === 'string') subTitle.innerHTML = m.sub;
+                if (typeof m.copy === 'string') copyBox.innerHTML = m.copy;
+            }
+            scheduleAutoSave();
+            updateStats();
+            checkPages();
+            scrollToPage(0);
         }
         function clearManual() {
             if(confirm("에디터 내용을 모두 지우시겠습니까?")) {
-                editor.innerHTML = ''; localStorage.removeItem('a6_content_auto');
+                editor.innerHTML = ''; LS.remove('a6_content_auto');
                 updateStats(); checkPages(); scrollToPage(0);
             }
         }
@@ -698,26 +903,31 @@
             document.getElementById(id).classList.add('active');
         }
 
-        function toggleSidebar() { 
-            sidebar.classList.toggle('collapsed');
+        // [FIX] 컨트롤바 위치 계산이 toggleSidebar / resize 두 곳에 흩어져 어긋났음 → 한 함수로 통합
+        function syncControlsPosition() {
             const controls = document.querySelector('.page-controls');
-            if(sidebar.classList.contains('collapsed')) {
+            const isNarrow = window.innerWidth < 1100;
+            if (sidebar.classList.contains('collapsed') || isNarrow) {
                 controls.style.left = '50%';
             } else {
                 controls.style.left = 'calc(50% + calc(var(--sidebar-width) / 2))';
             }
         }
+
+        function toggleSidebar() { 
+            sidebar.classList.toggle('collapsed');
+            syncControlsPosition();
+        }
         
+        // [FIX] 기존 resize 핸들러는 창 폭이 1100 이상이면 매번 사이드바를 강제로 열어버려서
+        //       사용자가 닫아둔 상태가 리사이즈(모바일 키보드 등)마다 무시됐음 → 좁아질 때만 자동으로 접음
+        let wasNarrow = window.innerWidth < 1100;
         window.addEventListener('resize', () => {
             calcZoomScale();
-            const controls = document.querySelector('.page-controls');
-            if (window.innerWidth < 1100) {
-                sidebar.classList.add('collapsed');
-                controls.style.left = '50%';
-            } else {
-                sidebar.classList.remove('collapsed');
-                controls.style.left = 'calc(50% + calc(var(--sidebar-width) / 2))';
-            }
+            const isNarrow = window.innerWidth < 1100;
+            if (isNarrow && !wasNarrow) sidebar.classList.add('collapsed');
+            wasNarrow = isNarrow;
+            syncControlsPosition();
             scrollToPage(currentPageIndex);
         });
 
@@ -769,13 +979,148 @@
             setTimeout(() => { checkPages(); scrollToPage(0); }, 100);
         }
 
-        function updateTypo() { editor.style.fontFamily = document.getElementById('fontSel').value; }
+        function updateTypo() {
+            editor.style.fontFamily = document.getElementById('fontSel').value;
+            saveTypo();
+        }
+
+        /* ===== [NEW] 글씨 세부 조정 (크기/자간/행간/들여쓰기/정렬) ===== */
+        const TYPO_DEFAULTS = {
+            font: "'Noto Serif KR', serif",
+            size: 10.5, track: -0.5, lead: 1.7, indent: 1.2, align: 'justify',
+            titleSize: 1.6, subSize: 0.75, copySize: 0.8
+        };
+
+        // 슬라이더 id → { CSS 변수, 값 표시 id, 단위 }
+        const TYPO_MAP = {
+            size:      { r: 'rSize',      v: 'vSize',      css: '--ed-size',    unit: 'px'  },
+            track:     { r: 'rTrack',     v: 'vTrack',     css: '--ed-track',   unit: 'px'  },
+            lead:      { r: 'rLead',      v: 'vLead',      css: '--ed-leading', unit: ''    },
+            indent:    { r: 'rIndent',    v: 'vIndent',    css: '--ed-indent',  unit: 'em'  },
+            titleSize: { r: 'rTitleSize', v: 'vTitleSize', css: '--title-size', unit: 'rem' },
+            subSize:   { r: 'rSubSize',   v: 'vSubSize',   css: '--sub-size',   unit: 'rem' },
+            copySize:  { r: 'rCopySize',  v: 'vCopySize',  css: '--copy-size',  unit: 'rem' }
+        };
+
+        let curAlign = TYPO_DEFAULTS.align;
+
+        function applyTypoVar(key) {
+            const m = TYPO_MAP[key];
+            const num = parseFloat(document.getElementById(m.r).value);
+            root.style.setProperty(m.css, num + m.unit);
+            document.getElementById(m.v).innerText = num + m.unit;
+        }
+
+        function applyAlign(align) {
+            curAlign = align;
+            root.style.setProperty('--ed-align', align);
+            document.querySelectorAll('#alignSeg button').forEach(b => {
+                b.classList.toggle('on', b.dataset.align === align);
+            });
+        }
+
+        function saveTypo() {
+            const data = { font: document.getElementById('fontSel').value, align: curAlign };
+            Object.keys(TYPO_MAP).forEach(k => {
+                data[k] = parseFloat(document.getElementById(TYPO_MAP[k].r).value);
+            });
+            LS.set('a6_typo', JSON.stringify(data));
+        }
+
+        function loadTypo() {
+            const saved = safeParseObj('a6_typo') || {};
+            const d = Object.assign({}, TYPO_DEFAULTS, saved);
+
+            const fontSel = document.getElementById('fontSel');
+            // 저장된 서체가 목록에 실제로 있을 때만 적용 (목록이 바뀌어도 깨지지 않도록)
+            if (Array.from(fontSel.options).some(o => o.value === d.font)) fontSel.value = d.font;
+            editor.style.fontFamily = fontSel.value;
+
+            Object.keys(TYPO_MAP).forEach(k => {
+                const n = Number(d[k]);
+                document.getElementById(TYPO_MAP[k].r).value = isFinite(n) ? n : TYPO_DEFAULTS[k];
+                applyTypoVar(k);
+            });
+            applyAlign(['justify', 'left', 'center', 'right'].includes(d.align) ? d.align : TYPO_DEFAULTS.align);
+        }
+
+        function bindTypoControls() {
+            Object.keys(TYPO_MAP).forEach(k => {
+                const el = document.getElementById(TYPO_MAP[k].r);
+                el.addEventListener('input', () => {
+                    applyTypoVar(k);
+                    checkPages();   // 크기·행간이 바뀌면 페이지 수가 달라지므로 즉시 재계산
+                });
+                el.addEventListener('change', saveTypo);
+            });
+
+            document.querySelectorAll('#alignSeg button').forEach(b => {
+                b.addEventListener('click', () => { applyAlign(b.dataset.align); saveTypo(); });
+            });
+
+            document.getElementById('typoReset').addEventListener('click', () => {
+                Object.keys(TYPO_MAP).forEach(k => {
+                    document.getElementById(TYPO_MAP[k].r).value = TYPO_DEFAULTS[k];
+                    applyTypoVar(k);
+                });
+                applyAlign(TYPO_DEFAULTS.align);
+                saveTypo();
+                checkPages();
+                showToast('기본값으로 되돌렸습니다.');
+            });
+        }
+
+        /* ===== [NEW] 토스트 알림 ===== */
+        let toastTimer = null;
+        function showToast(msg) {
+            const t = document.getElementById('toast');
+            t.innerText = msg;
+            t.classList.add('show');
+            clearTimeout(toastTimer);
+            toastTimer = setTimeout(() => t.classList.remove('show'), 2200);
+        }
+
+        // [FIX] 사이드바 버튼을 누르면 포커스가 버튼으로 옮겨가 execCommand('undo')가
+        //       에디터가 아닌 문서 전체에 걸려 아무 일도 안 일어났음 → 에디터로 포커스를 되돌린 뒤 실행
+        function doHistory(cmd) {
+            const prevScrollLeft = workspace.scrollLeft;
+            const prevScrollTop = workspace.scrollTop;
+            editor.focus({ preventScroll: true });
+            document.execCommand(cmd);
+            workspace.scrollLeft = prevScrollLeft;
+            workspace.scrollTop = prevScrollTop;
+            updateStats();
+            checkPages();
+            scheduleAutoSave();
+        }
+
+        // [FIX] 사이드바 버튼 클릭 순간 선택 영역이 풀려버리면 서식이 엉뚱한 곳에 적용되거나
+        //       아예 무시됐음 → 마지막 선택 영역을 기억했다가 복원한 뒤 명령 실행
+        let savedRange = null;
+        document.addEventListener('selectionchange', () => {
+            const sel = window.getSelection();
+            if (!sel.rangeCount) return;
+            const r = sel.getRangeAt(0);
+            if (editor.contains(r.commonAncestorContainer)) savedRange = r.cloneRange();
+        });
+
+        function restoreSelection() {
+            if (!savedRange) return false;
+            const sel = window.getSelection();
+            sel.removeAllRanges();
+            sel.addRange(savedRange);
+            return true;
+        }
 
         function applyFmt(cmd, id) {
             let val = id === 'transparent' ? 'transparent' : (id ? document.getElementById(id).value : null);
             // 🔥 포커스 이동으로 인한 자동 스크롤(첫 페이지로 튀는 현상) 방지를 위해 현재 스크롤 위치 저장
             const prevScrollLeft = workspace.scrollLeft;
             const prevScrollTop = workspace.scrollTop;
+
+            editor.focus({ preventScroll: true });
+            restoreSelection();
+
             document.execCommand('styleWithCSS', false, true);
             if(cmd === 'hiliteColor') {
                 // hiliteColor가 실패하는 브라우저(구형)에서만 backColor로 폴백.
@@ -786,37 +1131,56 @@
             } else {
                 document.execCommand(cmd, false, val);
             }
-            // preventScroll로 브라우저의 기본 스크롤 동작을 차단
-            editor.focus({ preventScroll: true });
             // 혹시라도 스크롤이 변했다면 즉시 복원 (구형 브라우저 대비)
             workspace.scrollLeft = prevScrollLeft;
             workspace.scrollTop = prevScrollTop;
+            // [FIX] 서식 변경이 자동 저장/글자수/페이지수에 전혀 반영되지 않아
+            //       새로고침하면 색·형광펜이 통째로 사라졌음
+            scheduleAutoSave();
+            checkPages();
         }
 
         function resetTextColor() {
             const prevScrollLeft = workspace.scrollLeft;
             const prevScrollTop = workspace.scrollTop;
+            editor.focus({ preventScroll: true });
+            restoreSelection();
             document.execCommand('styleWithCSS', false, true);
             const isDark = root.getAttribute('data-theme') === 'dark';
             document.execCommand('foreColor', false, isDark ? '#f4f4f5' : '#27272a');
-            editor.focus({ preventScroll: true });
             workspace.scrollLeft = prevScrollLeft;
             workspace.scrollTop = prevScrollTop;
+            scheduleAutoSave();
         }
 
-        function bindLongPress(el, type, color) {
-            let pressTimer;
+        function bindLongPress(el, type, color, onTap) {
+            let pressTimer = null;
+            let longFired = false;
+
             const start = (e) => {
-                if (e.type === 'mousedown' && e.button !== 0) return; 
-                pressTimer = setTimeout(() => { deleteFav(type, color); }, 600);
+                if (e.type === 'mousedown' && e.button !== 0) return;
+                longFired = false;
+                clearTimeout(pressTimer);
+                pressTimer = setTimeout(() => {
+                    longFired = true;   // [FIX] 길게 눌러 삭제한 뒤에도 click이 이어서 터져 색이 적용되던 문제
+                    deleteFav(type, color);
+                }, 600);
             };
             const cancel = () => { clearTimeout(pressTimer); };
-            
-            el.addEventListener('mousedown', start); el.addEventListener('touchstart', start);
-            el.addEventListener('mouseup', cancel); el.addEventListener('mouseleave', cancel);
-            el.addEventListener('touchend', cancel); el.addEventListener('touchmove', cancel);
-            
-            el.oncontextmenu = (e) => { e.preventDefault(); deleteFav(type, color); };
+
+            el.addEventListener('mousedown', start);
+            el.addEventListener('touchstart', start, { passive: true });
+            el.addEventListener('mouseup', cancel);
+            el.addEventListener('mouseleave', cancel);
+            el.addEventListener('touchend', cancel);
+            el.addEventListener('touchmove', cancel);
+
+            el.addEventListener('click', (e) => {
+                if (longFired) { longFired = false; e.preventDefault(); return; }
+                onTap();
+            });
+
+            el.oncontextmenu = (e) => { e.preventDefault(); longFired = true; deleteFav(type, color); };
         }
 
         function renderFavs() {
@@ -825,24 +1189,28 @@
             
             favTC.forEach(c => {
                 let div = document.createElement('div'); div.className = 'swatch'; div.style.background = c; div.title = "우클릭 또는 꾸욱 눌러서 삭제";
-                div.onclick = () => { document.getElementById('tc').value = c; applyFmt('foreColor', 'tc'); };
-                bindLongPress(div, 'text', c); tcBox.appendChild(div);
+                bindLongPress(div, 'text', c, () => {
+                    document.getElementById('tc').value = c; applyFmt('foreColor', 'tc');
+                });
+                tcBox.appendChild(div);
             });
             
             favHC.forEach(c => {
                 let div = document.createElement('div'); div.className = 'swatch'; div.style.background = c; div.title = "우클릭 또는 꾸욱 눌러서 삭제";
-                div.onclick = () => { document.getElementById('hc').value = c; applyFmt('hiliteColor', 'hc'); };
-                bindLongPress(div, 'hl', c); hcBox.appendChild(div);
+                bindLongPress(div, 'hl', c, () => {
+                    document.getElementById('hc').value = c; applyFmt('hiliteColor', 'hc');
+                });
+                hcBox.appendChild(div);
             });
         }
         
         function addFav(type) {
             if(type === 'text') {
                 let c = document.getElementById('tc').value;
-                if(!favTC.includes(c)) { favTC.push(c); localStorage.setItem('a6_v29_tc', JSON.stringify(favTC)); }
+                if(!favTC.includes(c)) { favTC.push(c); LS.set('a6_v29_tc', JSON.stringify(favTC)); }
             } else {
                 let c = document.getElementById('hc').value;
-                if(!favHC.includes(c)) { favHC.push(c); localStorage.setItem('a6_v29_hc', JSON.stringify(favHC)); }
+                if(!favHC.includes(c)) { favHC.push(c); LS.set('a6_v29_hc', JSON.stringify(favHC)); }
             }
             renderFavs();
         }
@@ -850,9 +1218,9 @@
         function deleteFav(type, color) {
             if(confirm('해당 색상을 삭제하시겠습니까?')) {
                 if(type === 'text') {
-                    favTC = favTC.filter(c => c !== color); localStorage.setItem('a6_v29_tc', JSON.stringify(favTC));
+                    favTC = favTC.filter(c => c !== color); LS.set('a6_v29_tc', JSON.stringify(favTC));
                 } else {
-                    favHC = favHC.filter(c => c !== color); localStorage.setItem('a6_v29_hc', JSON.stringify(favHC));
+                    favHC = favHC.filter(c => c !== color); LS.set('a6_v29_hc', JSON.stringify(favHC));
                 }
                 renderFavs();
             }
@@ -912,7 +1280,9 @@
         function resetPaperBg() {
             document.getElementById('pTop').value = '#ffffff';
             document.getElementById('pBot').value = '#ffffff';
-            root.style.setProperty('--paper-bg-color', '#ffffff');
+            // [FIX] 흰색을 인라인으로 박아버려서 리셋 후 다크모드로 바꿔도 종이가 계속 흰색으로 남았음
+            //       → 인라인 값을 제거해 테마 기본값(--paper-bg-color)이 다시 먹도록 함
+            root.style.removeProperty('--paper-bg-color');
             globalPaperBgImg = 'none';
             renderBg();
         }
@@ -920,7 +1290,7 @@
         function resetFrameBg() {
             document.getElementById('fTop').value = '#f4f4f5';
             document.getElementById('fBot').value = '#f4f4f5';
-            root.style.setProperty('--frame-bg-color', '#f4f4f5');
+            root.style.removeProperty('--frame-bg-color');
             globalFrameBgImg = 'none';
             renderBg();
         }
@@ -932,9 +1302,7 @@
             const w = isL ? 595 : 420;
             const h = isL ? 420 : 595;
             const gap = 30;
-            const cw = editor.clientWidth;
-            const cg = gap + (document.getElementById('chkFrame').checked ? 60 : 0) + 80;
-            const pages = Math.max(1, Math.round((editor.scrollWidth + cg) / (cw + cg)));
+            const pages = getPageCount();
             
             while(bgLayer.children.length < pages) {
                 const p = document.createElement('div'); p.className = 'page-bg'; p.innerHTML = `<div class="page-paper"></div>`;
@@ -954,6 +1322,12 @@
         }
 
         async function captureWideCanvas() {
+            // [FIX] CDN 차단·오프라인 등으로 html2canvas가 안 뜨면 ReferenceError만 나고
+            //       버튼이 '추출 중...'인 채로 굳어버렸음 → 미리 확인
+            if (typeof html2canvas !== 'function') {
+                throw new Error('이미지 변환 라이브러리(html2canvas)를 불러오지 못했습니다. 인터넷 연결을 확인해 주세요.');
+            }
+
             document.body.classList.add('is-exporting'); 
 
             const zoomWrap = document.querySelector('.zoom-wrap');
@@ -969,6 +1343,8 @@
             const ws = document.getElementById('workspace');
             const sc = document.getElementById('scrollContent');
             const originWsOverflow = ws.style.overflow;
+            const originScOverflow = sc.style.overflow;
+            const originBodyOverflow = document.body.style.overflow;
             
             ws.style.overflow = 'visible';
             sc.style.overflow = 'visible';
@@ -982,7 +1358,6 @@
             // 환경에서 문단 사이에 빈 줄을 끼워넣어 "저장 후 화면 공백" 버그를 일으켰음.
             // 따라서 여기서는 멀티라인 여부만 읽어두고(getClientRects는 읽기 전용),
             // 실제 padding/모서리 보정은 아래 html2canvas의 onclone(복제본)에서만 수행한다.
-            const editor = document.getElementById('editor');
             const liveHlSpans = Array.from(editor.querySelectorAll('span')).filter(s => s.style.backgroundColor && s.style.backgroundColor !== 'transparent' && s.style.backgroundColor !== 'rgba(0, 0, 0, 0)');
             const multiLineFlags = liveHlSpans.map(s => s.getClientRects().length > 1);
 
@@ -998,7 +1373,10 @@
                     scrollY: 0,
                     width: cvs.offsetWidth,
                     height: cvs.offsetHeight,
-                    windowWidth: cvs.offsetWidth + 200,
+                    // [FIX] windowWidth가 620px 등으로 잡히면 복제 문서에서 @media(max-width:768px)가
+                    //       발동해 캡처 레이아웃이 화면과 달라졌음 → 항상 데스크톱 폭 이상으로 확보
+                    windowWidth: Math.max(cvs.offsetWidth + 200, 1400),
+                    windowHeight: Math.max(cvs.offsetHeight + 200, 900),
                     onclone: (clonedDoc) => {
                         // 복제본에만 형광펜 보정 적용 (라이브 화면은 그대로 둔다).
                         // 복제본 body에 is-exporting을 달아 화면용 형광펜 CSS를 끈 뒤 수동 padding 적용 → 중복 방지.
@@ -1053,71 +1431,137 @@
                 zoomWrap.style.transform = originTransform;
                 scalePlaceholder.style.width = originPW;
                 scalePlaceholder.style.height = originPH;
+                // [FIX] 원래 값이 아니라 ''로 되돌려 인라인 스타일이 있던 경우 날아갔음
                 ws.style.overflow = originWsOverflow;
-                sc.style.overflow = '';
-                document.body.style.overflow = '';
+                sc.style.overflow = originScOverflow;
+                document.body.style.overflow = originBodyOverflow;
                 document.body.classList.remove('is-exporting'); 
+                checkPages(); // 임시로 바꿔둔 placeholder 크기를 실제 값으로 재계산
             }
 
             return wideCanvas;
         }
 
+        // [FIX] 두 버튼을 연달아 누르면 캡처가 겹쳐 화면 스타일 복원이 꼬였음 → 실행 중 잠금
+        let isExporting = false;
+
+        function setExportBusy(busy, btn, busyText, originalText) {
+            const btns = ['btnExportCur', 'btnExportAll', 'btnCopyCur'].map(id => document.getElementById(id));
+            btns.forEach(b => { b.disabled = busy; b.style.pointerEvents = busy ? 'none' : 'auto'; b.style.opacity = busy ? '0.6' : '1'; });
+            btn.innerText = busy ? busyText : originalText;
+            document.querySelector('.page-controls').style.display = busy ? 'none' : 'flex';
+        }
+
+        // [NEW] 넓은 캔버스에서 i번째 페이지만 잘라내는 공통 헬퍼 (내보내기/복사가 같은 로직을 쓰도록)
+        function slicePage(wideCanvas, i) {
+            const w = isL ? 595 : 420;
+            const h = isL ? 420 : 595;
+            const gap = 30;
+            const sc = document.createElement('canvas');
+            sc.width = w * 2; sc.height = h * 2;
+            sc.getContext('2d').drawImage(wideCanvas, i * (w + gap) * 2, 0, w * 2, h * 2, 0, 0, w * 2, h * 2);
+            return sc;
+        }
+
+        // [NEW] 현재 페이지를 이미지로 클립보드에 복사
+        async function copyCurrentPage() {
+            if (isExporting) return;
+
+            // 클립보드 이미지 쓰기는 HTTPS(또는 localhost)에서만 동작하고, Firefox 등 일부 브라우저는 미지원
+            if (!navigator.clipboard || !navigator.clipboard.write || typeof ClipboardItem === 'undefined') {
+                alert('이 브라우저에서는 이미지 클립보드 복사를 지원하지 않습니다.\n대신 "현재 페이지만" 버튼으로 PNG를 저장해 주세요.\n(HTTPS 또는 localhost 환경에서만 동작합니다)');
+                return;
+            }
+
+            const btn = document.getElementById('btnCopyCur');
+            const oTxt = btn.innerText;
+            isExporting = true;
+            setExportBusy(true, btn, '복사 중... 📋', oTxt);
+
+            // Safari는 클릭 직후 동기적으로 ClipboardItem을 만들어야 하므로 Blob "프로미스"를 그대로 넘긴다
+            const blobPromise = (async () => {
+                const wideCanvas = await captureWideCanvas();
+                const pages = bgLayer.children.length;
+                const i = Math.min(Math.max(0, currentPageIndex), pages - 1);
+                const sc = slicePage(wideCanvas, i);
+                const blob = await new Promise(res => sc.toBlob(res, 'image/png'));
+                if (!blob) throw new Error('이미지 생성에 실패했습니다.');
+                return blob;
+            })();
+
+            try {
+                await navigator.clipboard.write([new ClipboardItem({ 'image/png': blobPromise })]);
+                showToast(`${currentPageIndex + 1}페이지를 이미지로 복사했습니다 📋`);
+            } catch (err) {
+                console.error(err);
+                alert('이미지 복사에 실패했습니다.\n' + (err && err.message ? err.message : ''));
+            } finally {
+                isExporting = false;
+                setExportBusy(false, btn, '복사 중... 📋', oTxt);
+                scrollToPage(currentPageIndex);
+            }
+        }
+
         async function exportAllPages() {
-            const btn1 = document.getElementById('btnExportCur');
+            if (isExporting) return;
             const btn2 = document.getElementById('btnExportAll');
             const oTxt = btn2.innerText;
-            btn2.innerText = '추출 중... 📸'; 
-            btn1.style.pointerEvents = 'none'; btn2.style.pointerEvents = 'none';
-            document.querySelector('.page-controls').style.display = 'none';
+            isExporting = true;
+            setExportBusy(true, btn2, '추출 중... 📸', oTxt);
 
             try {
                 const wideCanvas = await captureWideCanvas();
 
-                const w = isL ? 595 : 420; const h = isL ? 420 : 595; const gap = 30;
                 const pages = bgLayer.children.length;
 
                 for (let i = 0; i < pages; i++) {
-                    const sc = document.createElement('canvas'); sc.width = w * 2; sc.height = h * 2;
-                    const ctx = sc.getContext('2d');
-                    ctx.drawImage(wideCanvas, i * (w + gap) * 2, 0, w * 2, h * 2, 0, 0, w * 2, h * 2);
+                    const sc = slicePage(wideCanvas, i);
                     
                     const link = document.createElement('a'); link.download = `Log_Archive_p${i + 1}.png`;
-                    link.href = sc.toDataURL('image/png'); link.click();
+                    link.href = sc.toDataURL('image/png');
+                    // [FIX] DOM에 붙이지 않은 <a>의 click()은 일부 브라우저(Firefox 등)에서 무시됐음
+                    document.body.appendChild(link);
+                    link.click();
+                    link.remove();
                     
                     await new Promise(r => setTimeout(r, 450));
                 }
+            } catch (err) {
+                console.error(err);
+                alert('이미지 추출에 실패했습니다.\n' + (err && err.message ? err.message : ''));
             } finally {
-                document.querySelector('.page-controls').style.display = 'flex';
-                btn2.innerText = oTxt; 
-                btn1.style.pointerEvents = 'auto'; btn2.style.pointerEvents = 'auto';
+                isExporting = false;
+                setExportBusy(false, btn2, '추출 중... 📸', oTxt);
                 scrollToPage(currentPageIndex);
             }
         }
 
         async function exportCurrentPage() {
+            if (isExporting) return;
             const btn1 = document.getElementById('btnExportCur');
-            const btn2 = document.getElementById('btnExportAll');
             const oTxt = btn1.innerText;
-            btn1.innerText = '추출 중... 📸'; 
-            btn1.style.pointerEvents = 'none'; btn2.style.pointerEvents = 'none';
-            document.querySelector('.page-controls').style.display = 'none';
+            isExporting = true;
+            setExportBusy(true, btn1, '추출 중... 📸', oTxt);
 
             try {
                 const wideCanvas = await captureWideCanvas();
 
-                const w = isL ? 595 : 420; const h = isL ? 420 : 595; const gap = 30;
-                const i = currentPageIndex;
-                
-                const sc = document.createElement('canvas'); sc.width = w * 2; sc.height = h * 2;
-                const ctx = sc.getContext('2d');
-                ctx.drawImage(wideCanvas, i * (w + gap) * 2, 0, w * 2, h * 2, 0, 0, w * 2, h * 2);
+                // [FIX] currentPageIndex가 실제 페이지 수를 넘어가면 빈(투명) 이미지가 저장됐음
+                const pages = bgLayer.children.length;
+                const i = Math.min(Math.max(0, currentPageIndex), pages - 1);
+                const sc = slicePage(wideCanvas, i);
                 
                 const link = document.createElement('a'); link.download = `Log_Archive_p${i + 1}.png`;
-                link.href = sc.toDataURL('image/png'); link.click();
+                link.href = sc.toDataURL('image/png');
+                document.body.appendChild(link);
+                link.click();
+                link.remove();
+            } catch (err) {
+                console.error(err);
+                alert('이미지 추출에 실패했습니다.\n' + (err && err.message ? err.message : ''));
             } finally {
-                document.querySelector('.page-controls').style.display = 'flex';
-                btn1.innerText = oTxt; 
-                btn1.style.pointerEvents = 'auto'; btn2.style.pointerEvents = 'auto';
+                isExporting = false;
+                setExportBusy(false, btn1, '추출 중... 📸', oTxt);
                 scrollToPage(currentPageIndex);
             }
         }
