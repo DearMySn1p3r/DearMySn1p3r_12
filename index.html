@@ -644,8 +644,10 @@
             updateLayout(); 
             
             loadMeta();
-            const saved = LS.get('a6_content_auto');
-            if(saved) editor.innerHTML = saved;
+
+            // [CHANGE] 새로고침 시 본문은 항상 빈 상태로 시작 (자동 복원 제거).
+            //          글을 남기려면 반드시 [수동저장]을 사용해야 함. 제목/부제/카피라이트 설정은 유지됨.
+            LS.remove('a6_content_auto');
             
             // [FIX] onload는 768px, resize 핸들러는 1100px 기준이라 창을 조금만 줄여도
             //       사이드바가 갑자기 닫히는 불일치가 있었음 → 1100px로 통일
@@ -683,6 +685,70 @@
             });
         });
 
+        /* ===== [FIX] 저장 → 불러오기 후 문단마다 엔터(빈 줄)가 하나씩 늘어나던 버그 =====
+           원인: contenteditable + white-space:pre-wrap 환경에서는 줄바꿈이
+                 "\n 문자"와 "<div> 블록" 두 가지 방식으로 뒤섞여 저장되는데,
+                 innerHTML 문자열을 다시 파싱해 넣으면 \n(줄바꿈)과 div(블록 줄바꿈)가
+                 각각 한 줄씩 만들어 빈 줄이 이중으로 생김.
+           해결: 저장/불러오기 시 내용을 "한 줄 = <div>…</div>" 형태로 정규화.
+                 글자색·형광펜·굵게 등 인라인 서식은 그대로 유지됨. */
+        function isBlockTag(el) {
+            return /^(DIV|P|SECTION|ARTICLE|BLOCKQUOTE|LI|UL|OL|H[1-6]|PRE)$/.test(el.tagName);
+        }
+
+        function normalizeEditorHTML() {
+            const lines = [];
+            let cur = '';
+
+            function wrapPair(el) {
+                const clone = el.cloneNode(false);
+                const html = clone.outerHTML;
+                const close = '</' + el.tagName.toLowerCase() + '>';
+                if (!html.endsWith(close)) return ['', '']; // 예외적인 void 태그 방어
+                return [html.slice(0, html.length - close.length), close];
+            }
+
+            function pushLine() { lines.push(cur); cur = ''; }
+
+            function walk(node, wrappers) {
+                const children = Array.from(node.childNodes);
+                children.forEach((child) => {
+                    if (child.nodeType === 3) {
+                        const parts = child.nodeValue.split('\n');
+                        parts.forEach((p, i) => {
+                            if (i > 0) pushLine();
+                            if (p) {
+                                let s = p.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+                                for (let k = wrappers.length - 1; k >= 0; k--) {
+                                    s = wrappers[k][0] + s + wrappers[k][1];
+                                }
+                                cur += s;
+                            }
+                        });
+                    } else if (child.nodeType === 1) {
+                        if (child.tagName === 'BR') {
+                            // 블록 맨 끝의 <br>은 브라우저가 넣는 자리표시자이므로 줄로 세지 않음
+                            const parentIsBlock = child.parentElement === editor || isBlockTag(child.parentElement);
+                            if (!(parentIsBlock && !child.nextSibling)) pushLine();
+                        } else if (/^(IMG|HR)$/.test(child.tagName)) {
+                            cur += child.outerHTML;
+                        } else if (isBlockTag(child)) {
+                            if (cur !== '') pushLine();   // 블록 앞에 남아있던 인라인 내용은 한 줄로 마감
+                            walk(child, wrappers);
+                            pushLine();                    // 블록 하나 = 최소 한 줄
+                        } else {
+                            walk(child, wrappers.concat([wrapPair(child)]));
+                        }
+                    }
+                });
+            }
+
+            walk(editor, []);
+            if (cur !== '') pushLine();
+            if (!lines.length) return '';
+            return lines.map(l => '<div>' + (l || '<br>') + '</div>').join('');
+        }
+
         function toggleQuotes() {
             const walker = document.createTreeWalker(editor, NodeFilter.SHOW_TEXT, null, false);
             let node;
@@ -707,7 +773,6 @@
                 n.nodeValue = val;
             });
 
-            LS.set('a6_content_auto', editor.innerHTML);
             updateStats();
             checkPages();
         }
@@ -790,17 +855,12 @@
             }
         });
 
-        // [FIX] 키 입력 한 글자마다 localStorage에 통째로 쓰느라 긴 글에서 심하게 버벅였음 → 디바운스
+        // [CHANGE] 본문 자동 저장 제거 (새로고침 = 새 문서). 제목/카피라이트 등 메타 정보만 자동 저장.
         let saveTimer = null;
         function scheduleAutoSave() {
             clearTimeout(saveTimer);
             saveTimer = setTimeout(() => {
-                try {
-                    LS.set('a6_content_auto', editor.innerHTML);
-                    saveMeta();
-                } catch (e) {
-                    console.warn('자동 저장 실패(저장 공간 초과일 수 있습니다):', e);
-                }
+                try { saveMeta(); } catch (e) { /* 저장 실패는 무시 */ }
             }, 400);
         }
 
@@ -831,15 +891,16 @@
         }
 
         editor.addEventListener('input', () => {
-            scheduleAutoSave();
             updateStats();
             checkPages(); 
             setTimeout(scrollToCursor, 100); 
         });
 
-        [mainTitle, subTitle, copyBox].forEach(el => {
+        [mainTitle, subTitle].forEach(el => {
             el.addEventListener('input', saveMeta);
         });
+        // 카피라이트는 여러 줄이 될 수 있으므로 입력 시 하단 공간도 함께 재계산
+        copyBox.addEventListener('input', () => { saveMeta(); checkPages(); });
 
         editor.addEventListener('keyup', (e) => {
             if(['ArrowRight', 'ArrowLeft', 'ArrowDown', 'ArrowUp', 'Enter'].includes(e.key)) {
@@ -855,8 +916,8 @@
         }
 
         function saveManual() {
-            const ok1 = LS.set('a6_content_manual', editor.innerHTML);
-            // [FIX] 수동저장이 본문만 저장하고 제목/카피라이트는 빼먹었음
+            // [FIX] 정규화된 형태로 저장해야 불러올 때 빈 줄이 늘어나지 않음
+            const ok1 = LS.set('a6_content_manual', normalizeEditorHTML());
             const ok2 = LS.set('a6_meta_manual', JSON.stringify({
                 title: mainTitle.innerHTML, sub: subTitle.innerHTML, copy: copyBox.innerHTML
             }));
@@ -867,13 +928,15 @@
             const saved = LS.get('a6_content_manual');
             if(saved === null) { alert("저장된 내용이 없습니다."); return; }
             editor.innerHTML = saved;
+            // [FIX] 예전 방식으로 저장돼 이미 빈 줄이 섞여 들어온 데이터도 한 번 더 정규화해 정리
+            editor.innerHTML = normalizeEditorHTML();
             const m = safeParseObj('a6_meta_manual');
             if (m) {
                 if (typeof m.title === 'string') mainTitle.innerHTML = m.title;
                 if (typeof m.sub === 'string') subTitle.innerHTML = m.sub;
                 if (typeof m.copy === 'string') copyBox.innerHTML = m.copy;
             }
-            scheduleAutoSave();
+            saveMeta();
             updateStats();
             checkPages();
             scrollToPage(0);
@@ -954,13 +1017,8 @@
             }
 
             const cBox = document.getElementById('copyright-box');
-            if(hasCopy) {
-                cBox.classList.remove('hidden'); 
-                root.style.setProperty('--copy-space', '45px');
-            } else {
-                cBox.classList.add('hidden'); 
-                root.style.setProperty('--copy-space', '20px');
-            }
+            if(hasCopy) cBox.classList.remove('hidden');
+            else cBox.classList.add('hidden');
             
             setTimeout(checkPages, 50);
         }
@@ -1091,7 +1149,6 @@
             workspace.scrollTop = prevScrollTop;
             updateStats();
             checkPages();
-            scheduleAutoSave();
         }
 
         // [FIX] 사이드바 버튼 클릭 순간 선택 영역이 풀려버리면 서식이 엉뚱한 곳에 적용되거나
@@ -1134,9 +1191,6 @@
             // 혹시라도 스크롤이 변했다면 즉시 복원 (구형 브라우저 대비)
             workspace.scrollLeft = prevScrollLeft;
             workspace.scrollTop = prevScrollTop;
-            // [FIX] 서식 변경이 자동 저장/글자수/페이지수에 전혀 반영되지 않아
-            //       새로고침하면 색·형광펜이 통째로 사라졌음
-            scheduleAutoSave();
             checkPages();
         }
 
@@ -1150,7 +1204,6 @@
             document.execCommand('foreColor', false, isDark ? '#f4f4f5' : '#27272a');
             workspace.scrollLeft = prevScrollLeft;
             workspace.scrollTop = prevScrollTop;
-            scheduleAutoSave();
         }
 
         function bindLongPress(el, type, color, onTap) {
