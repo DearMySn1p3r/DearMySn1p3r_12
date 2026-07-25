@@ -643,11 +643,10 @@
             document.getElementById('chkFrame').checked = false;
             updateLayout(); 
             
-            loadMeta();
-
-            // [CHANGE] 새로고침 시 본문은 항상 빈 상태로 시작 (자동 복원 제거).
-            //          글을 남기려면 반드시 [수동저장]을 사용해야 함. 제목/부제/카피라이트 설정은 유지됨.
+            // [CHANGE] 새로고침 시 본문·제목·부제·카피라이트 모두 초기 상태로 시작 (자동 복원 없음).
+            //          내용을 남기려면 반드시 [수동저장]을 사용해야 함.
             LS.remove('a6_content_auto');
+            LS.remove('a6_meta_auto');
             
             // [FIX] onload는 768px, resize 핸들러는 1100px 기준이라 창을 조금만 줄여도
             //       사이드바가 갑자기 닫히는 불일치가 있었음 → 1100px로 통일
@@ -855,32 +854,8 @@
             }
         });
 
-        // [CHANGE] 본문 자동 저장 제거 (새로고침 = 새 문서). 제목/카피라이트 등 메타 정보만 자동 저장.
-        let saveTimer = null;
-        function scheduleAutoSave() {
-            clearTimeout(saveTimer);
-            saveTimer = setTimeout(() => {
-                try { saveMeta(); } catch (e) { /* 저장 실패는 무시 */ }
-            }, 400);
-        }
-
-        // [FIX] 제목/부제/카피라이트는 어디에도 저장되지 않아 새로고침하면 전부 날아갔음
-        function saveMeta() {
-            try {
-                LS.set('a6_meta_auto', JSON.stringify({
-                    title: mainTitle.innerHTML,
-                    sub: subTitle.innerHTML,
-                    copy: copyBox.innerHTML
-                }));
-            } catch (e) { /* 저장 실패는 무시 */ }
-        }
-        function loadMeta() {
-            const m = safeParseObj('a6_meta_auto');
-            if (!m) return;
-            if (typeof m.title === 'string') mainTitle.innerHTML = m.title;
-            if (typeof m.sub === 'string') subTitle.innerHTML = m.sub;
-            if (typeof m.copy === 'string') copyBox.innerHTML = m.copy;
-        }
+        // [CHANGE] 자동 저장 완전 제거 — 새로고침하면 본문·제목·부제·카피라이트 모두 초기화.
+        //          보존은 오직 [수동저장] → [불러오기]로만 가능.
         function safeParseObj(key) {
             try {
                 const raw = LS.get(key);
@@ -896,11 +871,7 @@
             setTimeout(scrollToCursor, 100); 
         });
 
-        [mainTitle, subTitle].forEach(el => {
-            el.addEventListener('input', saveMeta);
-        });
-        // 카피라이트는 여러 줄이 될 수 있으므로 입력 시 하단 공간도 함께 재계산
-        copyBox.addEventListener('input', () => { saveMeta(); checkPages(); });
+        copyBox.addEventListener('input', () => { checkPages(); });
 
         editor.addEventListener('keyup', (e) => {
             if(['ArrowRight', 'ArrowLeft', 'ArrowDown', 'ArrowUp', 'Enter'].includes(e.key)) {
@@ -936,7 +907,6 @@
                 if (typeof m.sub === 'string') subTitle.innerHTML = m.sub;
                 if (typeof m.copy === 'string') copyBox.innerHTML = m.copy;
             }
-            saveMeta();
             updateStats();
             checkPages();
             scrollToPage(0);
