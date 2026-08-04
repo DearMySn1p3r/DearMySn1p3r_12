@@ -498,6 +498,17 @@
                         <button onclick="applyFmt('foreColor', 'tc')" style="width:auto; font-weight:600; background:var(--accent); color:var(--accent-text); border:none;">적용</button>
                         <button onclick="resetTextColor()" style="width:auto;">초기화</button>
                     </div>
+
+                    <!-- [NEW] 선택한 글자 색을 한 단계씩 밝게/어둡게 -->
+                    <div class="row" style="display:grid; grid-template-columns:1fr 1fr; gap:6px;">
+                        <button onclick="shadeSelection('light')" style="font-weight:600;">밝게 ☀</button>
+                        <button onclick="shadeSelection('dark')" style="font-weight:600;">어둡게 ☾</button>
+                    </div>
+
+                    <!-- [NEW] 딸깍 한 번으로 적용되는 기본 톤 -->
+                    <span class="lbl" style="font-size:0.72rem; color:var(--text-muted); font-weight:500;">기본 톤 (누르면 바로 적용)</span>
+                    <div class="palette" id="tonePresets"></div>
+
                     <div class="palette" id="tc-favs"></div>
                     <button class="btn-add" onclick="addFav('text')">+ 현재 색상 즐겨찾기에 추가</button>
                 </div>
@@ -790,6 +801,7 @@
             loadTypo();          // [NEW] 저장된 글씨 세부 설정 복원
             bindTypoControls();  // [NEW] 슬라이더/정렬 버튼 연결
             bindCoverControls(); // [NEW] 상단 이미지 컨트롤 연결
+            renderTonePresets(); // [NEW] 기본 톤 팔레트
             renderFavs();
             document.getElementById('chkFrame').checked = false;
             document.getElementById('chkCover').checked = false;  // [NEW] 상단 이미지는 항상 꺼진 상태로 시작
@@ -1581,6 +1593,68 @@
             workspace.scrollLeft = prevScrollLeft;
             workspace.scrollTop = prevScrollTop;
             checkPages();
+        }
+
+        /* ===== [NEW] 글자색 밝게/어둡게 + 기본 톤 =====
+           선택한 글자의 현재 색을 읽어 흰색/검정 쪽으로 한 단계씩 섞어준다.
+           (여러 색이 섞인 구간을 잡으면 맨 앞 글자의 색을 기준으로 전체가 맞춰짐) */
+        const TONE_PRESETS = ['#000000', '#27272a', '#52525b', '#8b8b93', '#b8b8bf', '#e4e4e7', '#ffffff'];
+
+        function toHex(n) { return Math.max(0, Math.min(255, Math.round(n))).toString(16).padStart(2, '0'); }
+
+        function rgbToHex(str) {
+            const m = String(str).match(/\d+/g);
+            if (!m || m.length < 3) return null;
+            return '#' + toHex(+m[0]) + toHex(+m[1]) + toHex(+m[2]);
+        }
+
+        // amt > 0 이면 흰색 쪽으로, amt < 0 이면 검정 쪽으로 섞는다
+        function shadeColor(hex, amt) {
+            const h = hex.replace('#', '');
+            const full = h.length === 3 ? h.split('').map(c => c + c).join('') : h;
+            const c = [0, 2, 4].map(i => parseInt(full.slice(i, i + 2), 16));
+            const out = c.map(v => amt >= 0 ? v + (255 - v) * amt : v * (1 + amt));
+            return '#' + out.map(toHex).join('');
+        }
+
+        // 선택 영역(또는 커서 위치)의 현재 글자색을 읽는다
+        function getSelectionColor() {
+            let range = savedRange;
+            if (!range) {
+                const sel = window.getSelection();
+                if (sel && sel.rangeCount) range = sel.getRangeAt(0);
+            }
+            const fallback = document.getElementById('tc').value;
+            if (!range) return fallback;
+            let node = range.startContainer;
+            const el = node.nodeType === 3 ? node.parentElement : node;
+            if (!el || !editor.contains(el)) return fallback;
+            return rgbToHex(getComputedStyle(el).color) || fallback;
+        }
+
+        function shadeSelection(dir) {
+            const next = shadeColor(getSelectionColor(), dir === 'light' ? 0.18 : -0.18);
+            document.getElementById('tc').value = next;
+            applyFmt('foreColor', 'tc');
+            showToast(`글자색 ${dir === 'light' ? '밝게' : '어둡게'} · ${next}`);
+        }
+
+        function applyTone(hex) {
+            document.getElementById('tc').value = hex;
+            applyFmt('foreColor', 'tc');
+        }
+
+        function renderTonePresets() {
+            const box = document.getElementById('tonePresets');
+            box.innerHTML = '';
+            TONE_PRESETS.forEach(c => {
+                const d = document.createElement('div');
+                d.className = 'swatch';
+                d.style.background = c;
+                d.title = c + ' 로 바꾸기';
+                d.addEventListener('click', () => applyTone(c));
+                box.appendChild(d);
+            });
         }
 
         function resetTextColor() {
