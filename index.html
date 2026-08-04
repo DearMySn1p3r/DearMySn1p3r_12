@@ -9,7 +9,7 @@
     
     <!-- Pretendard는 Google Fonts에서 호스팅하지 않으므로 전용 CDN으로 로드 (이 한 줄을 Google 요청에 섞으면 400 에러로 전체 폰트가 깨짐) -->
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard-dynamic-subset.min.css">
-    <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,600;1,400&family=Noto+Serif+KR:wght@300;400;600&family=Nanum+Myeongjo:wght@400;700;800&family=Gowun+Batang:wght@400;700&family=Gowun+Dodum&family=Hahmlet:wght@300;400;600&family=Playfair+Display:ital,wght@0,400;0,600;1,400&family=Cinzel:wght@400;600&family=Dongle:wght@400;700&family=Nanum+Pen+Script&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,600;1,400&family=Noto+Serif+KR:wght@300;400;600&family=Nanum+Myeongjo:wght@400;700;800&family=Gowun+Batang:wght@400;700&family=Gowun+Dodum&family=Hahmlet:wght@300;400;600&family=Song+Myung&family=Diphylleia&family=Noto+Sans+KR:wght@300;400;500;700&family=Nanum+Gothic:wght@400;700&family=Gothic+A1:wght@300;400;500;700&family=IBM+Plex+Sans+KR:wght@300;400;500;600&family=Playfair+Display:ital,wght@0,400;0,600;1,400&family=EB+Garamond:ital,wght@0,400;0,600;1,400&family=Lora:ital,wght@0,400;0,600;1,400&family=Cinzel:wght@400;600&display=swap" rel="stylesheet">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
 
     <style>
@@ -37,6 +37,16 @@
             --title-space-extra: 80px;
             --copy-space: 45px;
             
+            /* [NEW] 상단 이미지(표지형) 레이아웃 변수 */
+            --cover-h: 190px;      /* 이미지 높이 */
+            --cover-top: 30px;     /* 위쪽 여백 */
+            --cover-side: 30px;    /* 좌우 여백 */
+            --cover-gap: 26px;     /* 이미지와 제목 사이 간격 */
+            --cover-radius: 0px;   /* 모서리 둥글기 */
+            --cover-pos: 50%;      /* 이미지 상하 위치 */
+            --cover-fit: cover;    /* 채우기 / 맞추기 */
+            --cover-block: 0px;    /* 이미지가 차지하는 총 높이 (JS가 계산) */
+            
             --sidebar-width: 340px;
             --zoom-scale: 1.5; 
 
@@ -49,6 +59,14 @@
             --title-size: 1.6rem;
             --sub-size: 0.75rem;
             --copy-size: 0.8rem;
+
+            /* [NEW] 제목/부제/카피라이트 정렬 */
+            --meta-align: center;      /* 제목·부제 텍스트 정렬 (밑줄 위치는 고정) */
+            /* 제목 밑줄의 폭 = 모든 상·하단 문구가 공유하는 기준선 (같은 위치에서 시작/끝나도록) */
+            --meta-line-w: calc((var(--a6-w) - (var(--frame-pad) * 2)) * 0.8);
+            --copy-align: center;      /* 하단 문구 좌우 정렬 */
+            --copy-side: 0px;          /* 하단 문구 좌우 여백 */
+            --copy-bottom: 15px;       /* 하단 문구 아래 여백 (높이 조절) */
         }
 
         [data-theme="dark"] {
@@ -202,9 +220,10 @@
         .meta-layer { position: absolute; top: 0; left: 0; width: var(--a6-w); height: var(--a6-h); pointer-events: none; z-index: 20; }
         
         .title-box {
-            position: absolute; top: calc(var(--frame-pad) + 30px); left: 0; right: 0; margin: 0 auto;
+            position: absolute; top: calc(var(--frame-pad) + 30px + var(--cover-block)); left: 0; right: 0; margin: 0 auto;
+            transition: top 0.2s ease;
             width: calc(var(--a6-w) - (var(--frame-pad) * 2)); pointer-events: auto;
-            display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center;
+            display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: var(--meta-align);
         }
         .main-title { 
             display: block; font-family: 'Cormorant Garamond', 'Nanum Myeongjo', serif;
@@ -215,7 +234,7 @@
             letter-spacing: -1px; 
             border-bottom: 1px solid var(--meta-sub-color, var(--text-muted)); 
             padding-bottom: 5px; 
-            width: 100%; max-width: 80%; text-align: center !important;
+            width: 100%; max-width: var(--meta-line-w); text-align: var(--meta-align) !important;
             transition: color 0.3s, border-color 0.3s;
         }
         [data-theme="dark"] .main-title { border-bottom: 1px solid var(--meta-sub-color, rgba(255,255,255,0.2)); }
@@ -225,22 +244,50 @@
             font-size: var(--sub-size); 
             color: var(--meta-sub-color, var(--text-muted)); 
             outline: none; font-weight: 400; letter-spacing: 0px; 
-            width: 100%; text-align: center !important;
+            width: 100%; max-width: var(--meta-line-w); margin: 0 auto; text-align: var(--meta-align) !important;
             transition: color 0.3s;
         }
         
+        /* ===== [NEW] 상단 이미지 (표지형 레이아웃) ===== */
+        .cover-box {
+            position: absolute;
+            top: calc(var(--frame-pad) + var(--cover-top));
+            left: calc(var(--frame-pad) + var(--cover-side));
+            right: calc(var(--frame-pad) + var(--cover-side));
+            height: var(--cover-h);
+            border-radius: var(--cover-radius);
+            background-repeat: no-repeat;
+            background-size: var(--cover-fit);
+            background-position: center var(--cover-pos);
+            overflow: hidden;
+            pointer-events: auto; cursor: pointer;
+            z-index: 21;
+            transition: height 0.2s ease, top 0.2s ease;
+        }
+        .cover-box.empty {
+            border: 1px dashed var(--meta-sub-color, var(--text-muted));
+            display: flex; align-items: center; justify-content: center;
+        }
+        .cover-box.empty::after {
+            content: "＋ 클릭해서 이미지 넣기";
+            font-family: 'Pretendard', sans-serif; font-size: 0.72rem; font-weight: 500;
+            letter-spacing: 0; color: var(--meta-sub-color, var(--text-muted)); opacity: 0.75;
+        }
+        /* 이미지를 안 넣은 채로 저장/추출하면 점선 안내가 찍히지 않도록 */
+        body.is-exporting .cover-box.empty { display: none; }
+
         .copyright-box {
-            position: absolute; bottom: calc(var(--frame-pad) + 15px); left: 0; right: 0; margin: 0 auto;
-            width: calc(var(--a6-w) - (var(--frame-pad) * 2)); text-align: center !important; pointer-events: auto;
+            position: absolute; bottom: calc(var(--frame-pad) + var(--copy-bottom)); left: 0; right: 0; margin: 0 auto;
+            width: calc(var(--meta-line-w) - (var(--copy-side) * 2)); text-align: var(--copy-align) !important; pointer-events: auto;
             font-size: var(--copy-size); 
             color: var(--meta-sub-color, var(--text-muted)); 
             outline: none;
-            transition: color 0.3s;
+            transition: color 0.3s, bottom 0.2s ease, width 0.2s ease;
         }
 
         .main-title:empty::before, .sub-title:empty::before, .copyright-box:empty::before { 
             content: attr(data-placeholder); color: var(--text-muted); font-style: normal; 
-            pointer-events: none; text-indent: 0 !important; display: block; font-weight: 400; text-align: center;
+            pointer-events: none; text-indent: 0 !important; display: block; font-weight: 400; text-align: inherit;
         }
         .editor:empty::after { 
             content: attr(data-placeholder); color: var(--text-muted); font-style: normal; 
@@ -328,21 +375,28 @@
                 <div class="item">
                     <label>서체 지정</label>
                     <select id="fontSel" onchange="updateTypo()">
-                        <optgroup label="명조 (우아함/소설)">
-                            <option value="'Noto Serif KR', serif">노토 명조 (기본)</option>
+                        <optgroup label="명조">
+                            <option value="'Noto Serif KR', serif">노토 명조</option>
                             <option value="'Nanum Myeongjo', serif">나눔 명조</option>
                             <option value="'Gowun Batang', serif">고운 바탕</option>
                             <option value="'Hahmlet', serif">함초롬체</option>
-                            <option value="'Cormorant Garamond', 'Noto Serif KR', serif">가라몬드 & 명조</option>
+                            <option value="'Song Myung', serif">송명체</option>
+                            <option value="'Diphylleia', serif">디필레이아</option>
+                            <option value="'Cormorant Garamond', 'Noto Serif KR', serif">가라몬드 명조</option>
                         </optgroup>
-                        <optgroup label="고딕 (현대적/단정)">
+                        <optgroup label="고딕">
                             <option value="'Pretendard', sans-serif">프리텐다드</option>
                             <option value="'Gowun Dodum', sans-serif">고운 돋움</option>
+                            <option value="'Noto Sans KR', sans-serif">노토 고딕</option>
+                            <option value="'Nanum Gothic', sans-serif">나눔 고딕</option>
+                            <option value="'Gothic A1', sans-serif">고딕 A1</option>
+                            <option value="'IBM Plex Sans KR', sans-serif">IBM 플렉스</option>
                         </optgroup>
-                        <optgroup label="개성/손글씨">
-                            <option value="'Nanum Pen Script', cursive">나눔 손글씨</option>
-                            <option value="'Dongle', sans-serif">동글체</option>
-                            <option value="'Playfair Display', serif">Playfair Display (영문)</option>
+                        <optgroup label="영문">
+                            <option value="'Playfair Display', 'Nanum Myeongjo', serif">Playfair Display</option>
+                            <option value="'EB Garamond', 'Nanum Myeongjo', serif">EB Garamond</option>
+                            <option value="'Lora', 'Noto Serif KR', serif">Lora</option>
+                            <option value="'Cinzel', 'Nanum Myeongjo', serif">Cinzel</option>
                         </optgroup>
                     </select>
                 </div>
@@ -400,6 +454,36 @@
                         <span class="lbl">하단 카피라이트</span>
                         <span class="val" id="vCopySize">0.8rem</span>
                         <input type="range" id="rCopySize" min="0.5" max="1.6" step="0.05" value="0.8">
+                    </div>
+                </div>
+
+                <!-- [NEW] 제목/부제 정렬 -->
+                <div class="item" style="border-top:1px dashed var(--border); padding-top:15px;">
+                    <label>제목 · 부제 정렬</label>
+                    <div class="seg" id="metaAlignSeg">
+                        <button data-malign="left">왼쪽</button>
+                        <button data-malign="center" class="on">가운데</button>
+                        <button data-malign="right">오른쪽</button>
+                    </div>
+                </div>
+
+                <!-- [NEW] 하단 문구(Pair Name) 정렬 및 위치 -->
+                <div class="item" style="border-top:1px dashed var(--border); padding-top:15px;">
+                    <label>하단 문구 정렬 · 위치 <span>Pair Name 줄</span></label>
+                    <div class="seg" id="copyAlignSeg">
+                        <button data-calign="left">왼쪽</button>
+                        <button data-calign="center" class="on">가운데</button>
+                        <button data-calign="right">오른쪽</button>
+                    </div>
+                    <div class="slider-row" style="margin-top:6px;">
+                        <span class="lbl">좌우 여백</span>
+                        <span class="val" id="vCopySide">0px</span>
+                        <input type="range" id="rCopySide" min="0" max="120" step="1" value="0">
+                    </div>
+                    <div class="slider-row">
+                        <span class="lbl">아래에서 띄우기</span>
+                        <span class="val" id="vCopyBottom">15px</span>
+                        <input type="range" id="rCopyBottom" min="0" max="120" step="1" value="15">
                     </div>
                 </div>
                 
@@ -513,6 +597,63 @@
                     </div>
                 </div>
 
+                <!-- [NEW] 상단 이미지 (표지형) -->
+                <div class="item" style="margin-top:15px; border-top:1px dashed var(--border); padding-top:20px;">
+                    <label>상단 이미지 넣기 <span>(첫 페이지 표지용)</span></label>
+                    <div class="row" style="padding:4px 0 6px;">
+                        <span style="font-size:0.75rem; color:var(--text-muted);">켜면 본문이 이미지 아래에서 시작합니다.</span>
+                        <label class="switch"><input type="checkbox" id="chkCover" onchange="updateCover()"><span class="slider"></span></label>
+                    </div>
+
+                    <input type="file" id="coverImgInput" class="hidden" accept="image/*" onchange="handleCoverImg(event)">
+
+                    <div id="coverConfig" class="hidden" style="display:flex; flex-direction:column; gap:10px;">
+                        <div class="row">
+                            <button onclick="pickCoverImg()" style="width:auto; flex:1; font-weight:600; background:var(--accent); color:var(--accent-text); border:none;">이미지 선택</button>
+                            <button onclick="removeCoverImg()" style="width:auto;">삭제</button>
+                        </div>
+
+                        <div class="slider-row">
+                            <span class="lbl">이미지 높이</span>
+                            <span class="val" id="vCoverH">190px</span>
+                            <input type="range" id="rCoverH" min="60" max="420" step="5" value="190">
+                        </div>
+                        <div class="slider-row">
+                            <span class="lbl">위쪽 여백</span>
+                            <span class="val" id="vCoverTop">30px</span>
+                            <input type="range" id="rCoverTop" min="0" max="120" step="1" value="30">
+                        </div>
+                        <div class="slider-row">
+                            <span class="lbl">좌우 여백</span>
+                            <span class="val" id="vCoverSide">30px</span>
+                            <input type="range" id="rCoverSide" min="0" max="120" step="1" value="30">
+                        </div>
+                        <div class="slider-row">
+                            <span class="lbl">아래 간격 (제목까지)</span>
+                            <span class="val" id="vCoverGap">26px</span>
+                            <input type="range" id="rCoverGap" min="0" max="100" step="1" value="26">
+                        </div>
+                        <div class="slider-row">
+                            <span class="lbl">모서리 둥글기</span>
+                            <span class="val" id="vCoverRadius">0px</span>
+                            <input type="range" id="rCoverRadius" min="0" max="40" step="1" value="0">
+                        </div>
+                        <div class="slider-row">
+                            <span class="lbl">이미지 상하 위치</span>
+                            <span class="val" id="vCoverPos">50%</span>
+                            <input type="range" id="rCoverPos" min="0" max="100" step="1" value="50">
+                        </div>
+
+                        <div>
+                            <span class="lbl" style="font-size:0.75rem; color:var(--text-muted); font-weight:500;">이미지 표시 방식</span>
+                            <div class="seg" id="coverFitSeg" style="margin-top:6px;">
+                                <button data-fit="cover" class="on">꽉 채우기 (잘림)</button>
+                                <button data-fit="contain">전체 보이기</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
                 <div class="item" style="margin-top:15px; border-top:1px dashed var(--border); padding-top:20px;">
                     <label style="margin-bottom: 15px;">상하단 텍스트 정보</label>
                     <div class="row">
@@ -555,6 +696,7 @@
                         <div class="bg-layer" id="bgLayer"></div>
                         <div class="content-layer">
                             <div class="meta-layer">
+                                <div class="cover-box empty hidden" id="coverBox" onclick="pickCoverImg()" title="클릭하여 이미지 선택"></div>
                                 <div class="title-box" id="title-box">
                                     <div class="main-title" id="mainTitle" contenteditable="true" data-placeholder="Title"></div>
                                     <div class="sub-title" contenteditable="true" data-placeholder="Written by Name"></div>
@@ -639,9 +781,12 @@
         window.onload = () => { 
             loadTypo();          // [NEW] 저장된 글씨 세부 설정 복원
             bindTypoControls();  // [NEW] 슬라이더/정렬 버튼 연결
+            bindCoverControls(); // [NEW] 상단 이미지 컨트롤 연결
             renderFavs();
             document.getElementById('chkFrame').checked = false;
+            document.getElementById('chkCover').checked = false;  // [NEW] 상단 이미지는 항상 꺼진 상태로 시작
             updateLayout(); 
+            updateCover();  // [NEW] 상단 이미지 박스/설정 패널 상태 동기화
             
             // [CHANGE] 새로고침 시 본문·제목·부제·카피라이트 모두 초기 상태로 시작 (자동 복원 없음).
             //          내용을 남기려면 반드시 [수동저장]을 사용해야 함.
@@ -978,19 +1123,119 @@
             }
 
             const tBox = document.getElementById('title-box');
-            if(hasTitle) {
-                tBox.classList.remove('hidden'); 
-                root.style.setProperty('--title-space-extra', '80px'); 
-            } else {
-                tBox.classList.add('hidden'); 
-                root.style.setProperty('--title-space-extra', '0px');
-            }
+            if(hasTitle) tBox.classList.remove('hidden');
+            else tBox.classList.add('hidden');
+
+            // [NEW] 제목 + 상단 이미지가 차지하는 공간을 함께 계산해 본문 시작 위치를 잡는다
+            applyCoverSpace();
 
             const cBox = document.getElementById('copyright-box');
             if(hasCopy) cBox.classList.remove('hidden');
             else cBox.classList.add('hidden');
             
             setTimeout(checkPages, 50);
+        }
+
+        /* ===== [NEW] 상단 이미지 (표지형 레이아웃) =====
+           - 첫 페이지 meta-layer 위에 이미지 박스를 얹고,
+             그 높이만큼 제목 위치(--cover-block)와 본문 첫 컬럼 여백(--title-space-extra)을 밀어준다.
+           - 이미지는 저장 용량 문제로 localStorage에 담지 않는다 (종이 배경 이미지와 동일한 방식). */
+        let coverImgData = '';
+
+        const COVER_MAP = {
+            h:      { r: 'rCoverH',      v: 'vCoverH',      css: '--cover-h',      unit: 'px' },
+            top:    { r: 'rCoverTop',    v: 'vCoverTop',    css: '--cover-top',    unit: 'px' },
+            side:   { r: 'rCoverSide',   v: 'vCoverSide',   css: '--cover-side',   unit: 'px' },
+            gap:    { r: 'rCoverGap',    v: 'vCoverGap',    css: '--cover-gap',    unit: 'px' },
+            radius: { r: 'rCoverRadius', v: 'vCoverRadius', css: '--cover-radius', unit: 'px' },
+            pos:    { r: 'rCoverPos',    v: 'vCoverPos',    css: '--cover-pos',    unit: '%'  }
+        };
+
+        function coverVal(key) {
+            const el = document.getElementById(COVER_MAP[key].r);
+            const n = parseFloat(el ? el.value : 0);
+            return isFinite(n) ? n : 0;
+        }
+
+        // 제목 공간(80px) + 이미지 블록을 합쳐 본문이 시작될 높이를 결정
+        function applyCoverSpace() {
+            const hasTitle = document.getElementById('chkTitle').checked;
+            const coverOn = document.getElementById('chkCover').checked;
+            const block = coverOn ? (coverVal('top') + coverVal('h') + coverVal('gap')) : 0;
+
+            root.style.setProperty('--cover-block', block + 'px');
+
+            // 본문 첫 컬럼에서 비워둘 높이. 페이지 밖으로 넘칠 만큼 크게 잡으면
+            // 첫 페이지 글자가 통째로 밀려나므로 남는 높이 안에서 잘라준다.
+            let reserve = (hasTitle ? 80 : 0) + block;
+            const avail = editor.clientHeight;
+            if (avail > 80 && reserve > avail - 40) reserve = avail - 40;
+            root.style.setProperty('--title-space-extra', reserve + 'px');
+        }
+
+        function updateCover() {
+            const on = document.getElementById('chkCover').checked;
+            const box = document.getElementById('coverBox');
+            const cfg = document.getElementById('coverConfig');
+
+            box.classList.toggle('hidden', !on);
+            cfg.classList.toggle('hidden', !on);
+
+            Object.keys(COVER_MAP).forEach(applyCoverVar);
+            applyCoverSpace();
+            setTimeout(checkPages, 50);
+        }
+
+        function applyCoverVar(key) {
+            const m = COVER_MAP[key];
+            const n = coverVal(key);
+            root.style.setProperty(m.css, n + m.unit);
+            document.getElementById(m.v).innerText = n + m.unit;
+        }
+
+        function pickCoverImg() { document.getElementById('coverImgInput').click(); }
+
+        function handleCoverImg(e) {
+            const f = e.target.files[0];
+            if (!f) return;
+            const reader = new FileReader();
+            reader.onload = ev => {
+                coverImgData = ev.target.result;
+                const box = document.getElementById('coverBox');
+                box.style.backgroundImage = `url("${coverImgData}")`;
+                box.classList.remove('empty');
+                // 이미지를 넣었는데 스위치가 꺼져 있으면 자동으로 켜준다
+                const chk = document.getElementById('chkCover');
+                if (!chk.checked) { chk.checked = true; updateCover(); }
+                showToast('상단 이미지가 적용되었습니다 ✓');
+            };
+            reader.readAsDataURL(f);
+            e.target.value = '';
+        }
+
+        function removeCoverImg() {
+            coverImgData = '';
+            const box = document.getElementById('coverBox');
+            box.style.backgroundImage = 'none';
+            box.classList.add('empty');
+        }
+
+        function bindCoverControls() {
+            Object.keys(COVER_MAP).forEach(k => {
+                const el = document.getElementById(COVER_MAP[k].r);
+                el.addEventListener('input', () => {
+                    applyCoverVar(k);
+                    applyCoverSpace();
+                    checkPages();
+                });
+            });
+
+            document.querySelectorAll('#coverFitSeg button').forEach(b => {
+                b.addEventListener('click', () => {
+                    root.style.setProperty('--cover-fit', b.dataset.fit);
+                    document.querySelectorAll('#coverFitSeg button').forEach(x => x.classList.toggle('on', x === b));
+                });
+            });
         }
 
         function setMode(m) {
@@ -1016,7 +1261,9 @@
         const TYPO_DEFAULTS = {
             font: "'Noto Serif KR', serif",
             size: 10.5, track: -0.5, lead: 1.7, indent: 1.2, align: 'justify',
-            titleSize: 1.6, subSize: 0.75, copySize: 0.8
+            titleSize: 1.6, subSize: 0.75, copySize: 0.8,
+            copySide: 0, copyBottom: 15,               // [NEW] 하단 문구 위치
+            metaAlign: 'center', copyAlign: 'center'   // [NEW] 제목·부제 / 하단 문구 정렬
         };
 
         // 슬라이더 id → { CSS 변수, 값 표시 id, 단위 }
@@ -1027,16 +1274,24 @@
             indent:    { r: 'rIndent',    v: 'vIndent',    css: '--ed-indent',  unit: 'em'  },
             titleSize: { r: 'rTitleSize', v: 'vTitleSize', css: '--title-size', unit: 'rem' },
             subSize:   { r: 'rSubSize',   v: 'vSubSize',   css: '--sub-size',   unit: 'rem' },
-            copySize:  { r: 'rCopySize',  v: 'vCopySize',  css: '--copy-size',  unit: 'rem' }
+            copySize:  { r: 'rCopySize',  v: 'vCopySize',  css: '--copy-size',  unit: 'rem' },
+            copySide:   { r: 'rCopySide',   v: 'vCopySide',   css: '--copy-side',   unit: 'px' },
+            copyBottom: { r: 'rCopyBottom', v: 'vCopyBottom', css: '--copy-bottom', unit: 'px' }
         };
 
         let curAlign = TYPO_DEFAULTS.align;
+        let curMetaAlign = TYPO_DEFAULTS.metaAlign;   // [NEW]
+        let curCopyAlign = TYPO_DEFAULTS.copyAlign;   // [NEW]
 
         function applyTypoVar(key) {
             const m = TYPO_MAP[key];
             const num = parseFloat(document.getElementById(m.r).value);
             root.style.setProperty(m.css, num + m.unit);
             document.getElementById(m.v).innerText = num + m.unit;
+
+            // [NEW] 하단 문구를 위로 올리면 본문이 그만큼 일찍 끝나도록 여백을 같이 늘린다
+            //       (기본값 15px일 때 기존과 동일한 45px)
+            if (key === 'copyBottom') root.style.setProperty('--copy-space', (30 + num) + 'px');
         }
 
         function applyAlign(align) {
@@ -1047,8 +1302,28 @@
             });
         }
 
+        /* [NEW] 제목·부제 정렬. 밑줄(가운데 80%)은 그대로 두고 글자만 선의 왼쪽 끝 / 가운데 / 오른쪽 끝으로 이동 */
+        function applyMetaAlign(align) {
+            if (!['left', 'center', 'right'].includes(align)) align = 'center';
+            curMetaAlign = align;
+            root.style.setProperty('--meta-align', align);
+            document.querySelectorAll('#metaAlignSeg button').forEach(b => {
+                b.classList.toggle('on', b.dataset.malign === align);
+            });
+        }
+
+        /* [NEW] 하단 카피라이트 정렬 */
+        function applyCopyAlign(align) {
+            if (!['left', 'center', 'right'].includes(align)) align = 'center';
+            curCopyAlign = align;
+            root.style.setProperty('--copy-align', align);
+            document.querySelectorAll('#copyAlignSeg button').forEach(b => {
+                b.classList.toggle('on', b.dataset.calign === align);
+            });
+        }
+
         function saveTypo() {
-            const data = { font: document.getElementById('fontSel').value, align: curAlign };
+            const data = { font: document.getElementById('fontSel').value, align: curAlign, metaAlign: curMetaAlign, copyAlign: curCopyAlign };
             Object.keys(TYPO_MAP).forEach(k => {
                 data[k] = parseFloat(document.getElementById(TYPO_MAP[k].r).value);
             });
@@ -1070,6 +1345,8 @@
                 applyTypoVar(k);
             });
             applyAlign(['justify', 'left', 'center', 'right'].includes(d.align) ? d.align : TYPO_DEFAULTS.align);
+            applyMetaAlign(d.metaAlign);   // [NEW]
+            applyCopyAlign(d.copyAlign);   // [NEW]
         }
 
         function bindTypoControls() {
@@ -1086,12 +1363,22 @@
                 b.addEventListener('click', () => { applyAlign(b.dataset.align); saveTypo(); });
             });
 
+            // [NEW] 제목·부제 / 카피라이트 정렬 버튼
+            document.querySelectorAll('#metaAlignSeg button').forEach(b => {
+                b.addEventListener('click', () => { applyMetaAlign(b.dataset.malign); saveTypo(); });
+            });
+            document.querySelectorAll('#copyAlignSeg button').forEach(b => {
+                b.addEventListener('click', () => { applyCopyAlign(b.dataset.calign); saveTypo(); });
+            });
+
             document.getElementById('typoReset').addEventListener('click', () => {
                 Object.keys(TYPO_MAP).forEach(k => {
                     document.getElementById(TYPO_MAP[k].r).value = TYPO_DEFAULTS[k];
                     applyTypoVar(k);
                 });
                 applyAlign(TYPO_DEFAULTS.align);
+                applyMetaAlign(TYPO_DEFAULTS.metaAlign);   // [NEW]
+                applyCopyAlign(TYPO_DEFAULTS.copyAlign);   // [NEW]
                 saveTypo();
                 checkPages();
                 showToast('기본값으로 되돌렸습니다.');
