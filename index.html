@@ -495,7 +495,7 @@
                         <div class="color-box">
                             <input type="color" id="tc" value="#111111"> <span style="font-size:0.75rem; font-weight:500;">색 선택</span>
                         </div>
-                        <button onclick="applyFmt('foreColor', 'tc')" style="width:auto; font-weight:600; background:var(--accent); color:var(--accent-text); border:none;">적용</button>
+                        <button onclick="applyColorSmart(document.getElementById('tc').value)" style="width:auto; font-weight:600; background:var(--accent); color:var(--accent-text); border:none;">적용</button>
                         <button onclick="resetTextColor()" style="width:auto;">초기화</button>
                     </div>
 
@@ -506,7 +506,9 @@
                     </div>
 
                     <!-- [NEW] 딸깍 한 번으로 적용되는 기본 톤 -->
-                    <span class="lbl" style="font-size:0.72rem; color:var(--text-muted); font-weight:500;">기본 톤 (누르면 바로 적용)</span>
+                    <span class="lbl" style="font-size:0.72rem; color:var(--text-muted); font-weight:500; line-height:1.5;">
+                        기본 톤 · 글자를 선택했으면 그 부분만, 선택 없이 누르면 본문 전체가 바뀝니다
+                    </span>
                     <div class="palette" id="tonePresets"></div>
 
                     <div class="palette" id="tc-favs"></div>
@@ -698,6 +700,16 @@
                 <button onclick="clearManual()" style="color:#ef4444;">초기화</button>
             </div>
             
+            <!-- [NEW] 저장 화질 -->
+            <div class="row" style="gap:8px; margin-bottom:8px; flex-wrap:nowrap;">
+                <span style="font-size:0.75rem; color:var(--text-muted); white-space:nowrap;">저장 화질</span>
+                <select id="exportScale" onchange="saveExportScale()" style="flex:1; width:auto; padding:8px 10px; font-size:0.75rem;">
+                    <option value="4" selected>최고화질 (4배)</option>
+                    <option value="3">고화질 (3배)</option>
+                    <option value="2">가볍게 (2배)</option>
+                </select>
+            </div>
+
             <div style="display:flex; gap:8px; margin-top:5px;">
                 <button id="btnExportCur" class="btn-primary" onclick="exportCurrentPage()" style="background:var(--bg-panel); color:var(--text-ui); border:1px solid var(--border); font-size:0.8rem; padding:12px;">현재 페이지만</button>
                 <button id="btnExportAll" class="btn-primary" onclick="exportAllPages()" style="font-size:0.8rem; padding:12px;">전체 자동 분할</button>
@@ -802,6 +814,7 @@
             bindTypoControls();  // [NEW] 슬라이더/정렬 버튼 연결
             bindCoverControls(); // [NEW] 상단 이미지 컨트롤 연결
             renderTonePresets(); // [NEW] 기본 톤 팔레트
+            loadExportScale();   // [NEW] 저장 화질 설정 복원
             renderFavs();
             document.getElementById('chkFrame').checked = false;
             document.getElementById('chkCover').checked = false;  // [NEW] 상단 이미지는 항상 꺼진 상태로 시작
@@ -1617,16 +1630,18 @@
             return '#' + out.map(toHex).join('');
         }
 
-        // 선택 영역(또는 커서 위치)의 현재 글자색을 읽는다
+        // 선택 영역(없으면 본문 전체)의 현재 글자색을 읽는다
         function getSelectionColor() {
+            const fallback = rgbToHex(getComputedStyle(editor).color) || document.getElementById('tc').value;
+            if (!hasEditorSelection()) return fallback;
+
             let range = savedRange;
             if (!range) {
                 const sel = window.getSelection();
                 if (sel && sel.rangeCount) range = sel.getRangeAt(0);
             }
-            const fallback = document.getElementById('tc').value;
             if (!range) return fallback;
-            let node = range.startContainer;
+            const node = range.startContainer;
             const el = node.nodeType === 3 ? node.parentElement : node;
             if (!el || !editor.contains(el)) return fallback;
             return rgbToHex(getComputedStyle(el).color) || fallback;
@@ -1634,15 +1649,57 @@
 
         function shadeSelection(dir) {
             const next = shadeColor(getSelectionColor(), dir === 'light' ? 0.18 : -0.18);
-            document.getElementById('tc').value = next;
-            applyFmt('foreColor', 'tc');
-            showToast(`글자색 ${dir === 'light' ? '밝게' : '어둡게'} · ${next}`);
+            applyColorSmart(next);
         }
 
-        function applyTone(hex) {
-            document.getElementById('tc').value = hex;
-            applyFmt('foreColor', 'tc');
+        // 지금 본문에 실제로 잡혀 있는 선택 영역이 있는지
+        function hasEditorSelection() {
+            const sel = window.getSelection();
+            if (sel && sel.rangeCount) {
+                const r = sel.getRangeAt(0);
+                if (!r.collapsed && editor.contains(r.commonAncestorContainer)) return true;
+            }
+            return !!(savedRange && !savedRange.collapsed && editor.contains(savedRange.commonAncestorContainer));
         }
+
+        // 본문 전체 글자색 바꾸기 (되돌리기 ↩ 로 취소 가능)
+        function applyColorAll(hex) {
+            const prevL = workspace.scrollLeft, prevT = workspace.scrollTop;
+            editor.focus({ preventScroll: true });
+
+            const sel = window.getSelection();
+            const r = document.createRange();
+            r.selectNodeContents(editor);
+            sel.removeAllRanges();
+            sel.addRange(r);
+
+            document.execCommand('styleWithCSS', false, true);
+            document.execCommand('foreColor', false, hex);
+
+            sel.removeAllRanges();
+            savedRange = null;
+            editor.style.color = hex;   // 앞으로 입력할 글자도 같은 색으로
+
+            workspace.scrollLeft = prevL;
+            workspace.scrollTop = prevT;
+            checkPages();
+        }
+
+        /* [FIX] 색을 눌러도 아무 변화가 없던 문제:
+           execCommand는 선택 영역이 있어야만 동작하는데, 글자를 선택하지 않고 누르는 경우가 많았음.
+           → 선택이 없으면 본문 전체에 적용한다. */
+        function applyColorSmart(hex) {
+            document.getElementById('tc').value = hex;
+            if (hasEditorSelection()) {
+                applyFmt('foreColor', 'tc');
+                showToast(`선택한 글자를 ${hex} 로 바꿨습니다`);
+            } else {
+                applyColorAll(hex);
+                showToast(`본문 전체 글자색을 ${hex} 로 바꿨습니다`);
+            }
+        }
+
+        function applyTone(hex) { applyColorSmart(hex); }
 
         function renderTonePresets() {
             const box = document.getElementById('tonePresets');
@@ -1658,13 +1715,23 @@
         }
 
         function resetTextColor() {
+            const isDark = root.getAttribute('data-theme') === 'dark';
+            const base = isDark ? '#f4f4f5' : '#27272a';
+
+            if (!hasEditorSelection()) {
+                // 선택이 없으면 본문 전체를 기본색으로 되돌리고, 고정해둔 색도 해제
+                applyColorAll(base);
+                editor.style.color = '';
+                showToast('본문 글자색을 기본으로 되돌렸습니다');
+                return;
+            }
+
             const prevScrollLeft = workspace.scrollLeft;
             const prevScrollTop = workspace.scrollTop;
             editor.focus({ preventScroll: true });
             restoreSelection();
             document.execCommand('styleWithCSS', false, true);
-            const isDark = root.getAttribute('data-theme') === 'dark';
-            document.execCommand('foreColor', false, isDark ? '#f4f4f5' : '#27272a');
+            document.execCommand('foreColor', false, base);
             workspace.scrollLeft = prevScrollLeft;
             workspace.scrollTop = prevScrollTop;
         }
@@ -1837,6 +1904,35 @@
             updatePageIndicator();
         }
 
+        /* ===== [NEW] 저장 화질 =====
+           화면의 한 페이지는 420×595px이라 2배로 뽑으면 840×1190px밖에 안 돼 흐릿하게 보였음.
+           3~4배까지 올릴 수 있게 하되, 페이지가 많으면 캔버스 최대 크기를 넘겨
+           브라우저가 빈 이미지를 뱉기 때문에 자동으로 배율을 낮춘다. */
+        let lastCaptureScale = 2;
+
+        function getExportScale() {
+            const sel = document.getElementById('exportScale');
+            let sc = parseInt(sel ? sel.value : '4', 10);
+            if (!isFinite(sc) || sc < 1) sc = 2;
+
+            const cvs = document.getElementById('canvas');
+            const w = cvs.offsetWidth || (isL ? 595 : 420);
+            const h = isL ? 420 : 595;
+            const MAX_PX = 16000000;   // Safari 등에서 안전한 캔버스 픽셀 수
+            while (sc > 1 && (w * sc) * (h * sc) > MAX_PX) sc--;
+            return sc;
+        }
+
+        function saveExportScale() {
+            LS.set('a6_export_scale', document.getElementById('exportScale').value);
+        }
+
+        function loadExportScale() {
+            const v = LS.get('a6_export_scale');
+            const sel = document.getElementById('exportScale');
+            if (v && Array.from(sel.options).some(o => o.value === v)) sel.value = v;
+        }
+
         async function captureWideCanvas() {
             // [FIX] CDN 차단·오프라인 등으로 html2canvas가 안 뜨면 ReferenceError만 나고
             //       버튼이 '추출 중...'인 채로 굳어버렸음 → 미리 확인
@@ -1879,10 +1975,16 @@
 
             await new Promise(r => setTimeout(r, 150));
 
+            const capScale = getExportScale();
+            lastCaptureScale = capScale;
+            if (capScale < parseInt(document.getElementById('exportScale').value, 10)) {
+                showToast(`페이지가 많아 ${capScale}배 화질로 저장합니다`);
+            }
+
             let wideCanvas;
             try {
                 wideCanvas = await html2canvas(cvs, { 
-                    scale: 2, 
+                    scale: capScale, 
                     useCORS: true, 
                     backgroundColor: null, 
                     scrollX: 0, 
@@ -1973,9 +2075,12 @@
             const w = isL ? 595 : 420;
             const h = isL ? 420 : 595;
             const gap = 30;
+            const k = lastCaptureScale;   // [FIX] 캡처 배율과 자르는 배율이 어긋나면 잘못된 영역이 잘림
             const sc = document.createElement('canvas');
-            sc.width = w * 2; sc.height = h * 2;
-            sc.getContext('2d').drawImage(wideCanvas, i * (w + gap) * 2, 0, w * 2, h * 2, 0, 0, w * 2, h * 2);
+            sc.width = w * k; sc.height = h * k;
+            const ctx = sc.getContext('2d');
+            ctx.imageSmoothingEnabled = false;   // 1:1 복사이므로 보간 없이 그대로 옮긴다
+            ctx.drawImage(wideCanvas, i * (w + gap) * k, 0, w * k, h * k, 0, 0, w * k, h * k);
             return sc;
         }
 
