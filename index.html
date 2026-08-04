@@ -43,8 +43,6 @@
             --cover-side: 30px;    /* 좌우 여백 */
             --cover-gap: 26px;     /* 이미지와 제목 사이 간격 */
             --cover-radius: 0px;   /* 모서리 둥글기 */
-            --cover-pos: 50%;      /* 이미지 상하 위치 */
-            --cover-fit: cover;    /* 채우기 / 맞추기 */
             --cover-block: 0px;    /* 이미지가 차지하는 총 높이 (JS가 계산) */
             
             --sidebar-width: 340px;
@@ -257,13 +255,17 @@
             height: var(--cover-h);
             border-radius: var(--cover-radius);
             background-repeat: no-repeat;
-            background-size: var(--cover-fit);
-            background-position: center var(--cover-pos);
+            /* 확대/이동 결과는 JS가 px 단위로 직접 계산해 넣는다 (빈 공간이 생기지 않도록 항상 보정) */
+            background-size: cover;
+            background-position: center;
             overflow: hidden;
             pointer-events: auto; cursor: pointer;
+            touch-action: none; user-select: none; -webkit-user-select: none;
             z-index: 21;
             transition: height 0.2s ease, top 0.2s ease;
         }
+        .cover-box:not(.empty) { cursor: grab; }
+        .cover-box.dragging { cursor: grabbing; }
         .cover-box.empty {
             border: 1px dashed var(--meta-sub-color, var(--text-muted));
             display: flex; align-items: center; justify-content: center;
@@ -599,9 +601,9 @@
 
                 <!-- [NEW] 상단 이미지 (표지형) -->
                 <div class="item" style="margin-top:15px; border-top:1px dashed var(--border); padding-top:20px;">
-                    <label>상단 이미지 넣기 <span>(첫 페이지 표지용)</span></label>
+                    <label>상단 이미지 넣기 <span id="coverReset" style="cursor:pointer; text-decoration:underline;">기본값으로</span></label>
                     <div class="row" style="padding:4px 0 6px;">
-                        <span style="font-size:0.75rem; color:var(--text-muted);">켜면 본문이 이미지 아래에서 시작합니다.</span>
+                        <span style="font-size:0.75rem; color:var(--text-muted);">첫 페이지 표지용. 본문이 이미지 아래에서 시작합니다.</span>
                         <label class="switch"><input type="checkbox" id="chkCover" onchange="updateCover()"><span class="slider"></span></label>
                     </div>
 
@@ -639,18 +641,24 @@
                             <input type="range" id="rCoverRadius" min="0" max="40" step="1" value="0">
                         </div>
                         <div class="slider-row">
-                            <span class="lbl">이미지 상하 위치</span>
-                            <span class="val" id="vCoverPos">50%</span>
-                            <input type="range" id="rCoverPos" min="0" max="100" step="1" value="50">
+                            <span class="lbl">이미지 확대</span>
+                            <span class="val" id="vCoverZoom">100%</span>
+                            <input type="range" id="rCoverZoom" min="100" max="400" step="1" value="100">
+                        </div>
+                        <div class="slider-row">
+                            <span class="lbl">좌우 위치</span>
+                            <span class="val" id="vCoverPosX">50%</span>
+                            <input type="range" id="rCoverPosX" min="0" max="100" step="1" value="50">
+                        </div>
+                        <div class="slider-row">
+                            <span class="lbl">상하 위치</span>
+                            <span class="val" id="vCoverPosY">50%</span>
+                            <input type="range" id="rCoverPosY" min="0" max="100" step="1" value="50">
                         </div>
 
-                        <div>
-                            <span class="lbl" style="font-size:0.75rem; color:var(--text-muted); font-weight:500;">이미지 표시 방식</span>
-                            <div class="seg" id="coverFitSeg" style="margin-top:6px;">
-                                <button data-fit="cover" class="on">꽉 채우기 (잘림)</button>
-                                <button data-fit="contain">전체 보이기</button>
-                            </div>
-                        </div>
+                        <span style="font-size:0.72rem; color:var(--text-muted); line-height:1.5;">
+                            이미지를 직접 끌어서 옮길 수도 있어요. 어떻게 움직여도 빈 곳은 생기지 않습니다.
+                        </span>
                     </div>
                 </div>
 
@@ -696,7 +704,7 @@
                         <div class="bg-layer" id="bgLayer"></div>
                         <div class="content-layer">
                             <div class="meta-layer">
-                                <div class="cover-box empty hidden" id="coverBox" onclick="pickCoverImg()" title="클릭하여 이미지 선택"></div>
+                                <div class="cover-box empty hidden" id="coverBox" title="클릭해서 이미지 선택 · 끌어서 위치 이동"></div>
                                 <div class="title-box" id="title-box">
                                     <div class="main-title" id="mainTitle" contenteditable="true" data-placeholder="Title"></div>
                                     <div class="sub-title" contenteditable="true" data-placeholder="Written by Name"></div>
@@ -1132,6 +1140,7 @@
             const cBox = document.getElementById('copyright-box');
             if(hasCopy) cBox.classList.remove('hidden');
             else cBox.classList.add('hidden');
+            applyCopySpace();   // [FIX] 하단 문구를 껐다 켤 때 본문 영역도 같이 갱신
             
             setTimeout(checkPages, 50);
         }
@@ -1141,6 +1150,9 @@
              그 높이만큼 제목 위치(--cover-block)와 본문 첫 컬럼 여백(--title-space-extra)을 밀어준다.
            - 이미지는 저장 용량 문제로 localStorage에 담지 않는다 (종이 배경 이미지와 동일한 방식). */
         let coverImgData = '';
+        let coverNatural = { w: 0, h: 0 };   // 원본 이미지 크기 (확대·이동 계산에 필요)
+
+        const COVER_DEFAULTS = { h: 190, top: 30, side: 30, gap: 26, radius: 0, zoom: 100, posX: 50, posY: 50 };
 
         const COVER_MAP = {
             h:      { r: 'rCoverH',      v: 'vCoverH',      css: '--cover-h',      unit: 'px' },
@@ -1148,13 +1160,40 @@
             side:   { r: 'rCoverSide',   v: 'vCoverSide',   css: '--cover-side',   unit: 'px' },
             gap:    { r: 'rCoverGap',    v: 'vCoverGap',    css: '--cover-gap',    unit: 'px' },
             radius: { r: 'rCoverRadius', v: 'vCoverRadius', css: '--cover-radius', unit: 'px' },
-            pos:    { r: 'rCoverPos',    v: 'vCoverPos',    css: '--cover-pos',    unit: '%'  }
+            // 아래 3개는 CSS 변수가 아니라 JS가 직접 계산해서 그린다 (css 없음)
+            zoom:   { r: 'rCoverZoom',   v: 'vCoverZoom',   unit: '%' },
+            posX:   { r: 'rCoverPosX',   v: 'vCoverPosX',   unit: '%' },
+            posY:   { r: 'rCoverPosY',   v: 'vCoverPosY',   unit: '%' }
         };
 
         function coverVal(key) {
             const el = document.getElementById(COVER_MAP[key].r);
-            const n = parseFloat(el ? el.value : 0);
-            return isFinite(n) ? n : 0;
+            const n = parseFloat(el ? el.value : NaN);
+            return isFinite(n) ? n : (COVER_DEFAULTS[key] || 0);
+        }
+
+        /* [NEW] 이미지가 박스를 항상 꽉 채우도록 계산.
+           base = 박스를 덮는 최소 배율 → 확대(zoom)는 여기에 곱해지므로
+           어떤 값을 줘도 이미지가 박스보다 작아질 수 없다 = 빈 공간이 생기지 않는다. */
+        function coverGeometry() {
+            const box = document.getElementById('coverBox');
+            const boxW = box.clientWidth, boxH = box.clientHeight;
+            if (!coverNatural.w || !coverNatural.h || !boxW || !boxH) return null;
+            const base = Math.max(boxW / coverNatural.w, boxH / coverNatural.h);
+            const zoom = Math.max(1, coverVal('zoom') / 100);
+            return { boxW, boxH, rw: coverNatural.w * base * zoom, rh: coverNatural.h * base * zoom };
+        }
+
+        // 확대율과 위치(0~100%)를 실제 px 값으로 바꿔 그린다. 이동 가능 범위를 벗어날 수 없다.
+        function renderCoverImage() {
+            const box = document.getElementById('coverBox');
+            if (!coverImgData) { box.style.backgroundSize = ''; box.style.backgroundPosition = ''; return; }
+            const g = coverGeometry();
+            if (!g) return;
+            const rangeX = g.boxW - g.rw;   // 0 이하
+            const rangeY = g.boxH - g.rh;
+            box.style.backgroundSize = `${g.rw}px ${g.rh}px`;
+            box.style.backgroundPosition = `${rangeX * (coverVal('posX') / 100)}px ${rangeY * (coverVal('posY') / 100)}px`;
         }
 
         // 제목 공간(80px) + 이미지 블록을 합쳐 본문이 시작될 높이를 결정
@@ -1171,6 +1210,7 @@
             const avail = editor.clientHeight;
             if (avail > 80 && reserve > avail - 40) reserve = avail - 40;
             root.style.setProperty('--title-space-extra', reserve + 'px');
+            renderCoverImage();
         }
 
         function updateCover() {
@@ -1189,25 +1229,54 @@
         function applyCoverVar(key) {
             const m = COVER_MAP[key];
             const n = coverVal(key);
-            root.style.setProperty(m.css, n + m.unit);
+            if (m.css) root.style.setProperty(m.css, n + m.unit);
             document.getElementById(m.v).innerText = n + m.unit;
+            renderCoverImage();   // 박스 크기나 확대/위치가 바뀌면 항상 다시 계산
         }
 
         function pickCoverImg() { document.getElementById('coverImgInput').click(); }
+
+        // [NEW] 이미지는 그대로 두고 크기·여백 값만 처음 상태로 되돌린다
+        function resetCoverSettings() {
+            Object.keys(COVER_MAP).forEach(k => {
+                document.getElementById(COVER_MAP[k].r).value = COVER_DEFAULTS[k];
+                applyCoverVar(k);
+            });
+            applyCoverSpace();
+            checkPages();
+            showToast('상단 이미지 설정을 기본값으로 되돌렸습니다.');
+        }
 
         function handleCoverImg(e) {
             const f = e.target.files[0];
             if (!f) return;
             const reader = new FileReader();
             reader.onload = ev => {
-                coverImgData = ev.target.result;
-                const box = document.getElementById('coverBox');
-                box.style.backgroundImage = `url("${coverImgData}")`;
-                box.classList.remove('empty');
-                // 이미지를 넣었는데 스위치가 꺼져 있으면 자동으로 켜준다
-                const chk = document.getElementById('chkCover');
-                if (!chk.checked) { chk.checked = true; updateCover(); }
-                showToast('상단 이미지가 적용되었습니다 ✓');
+                const data = ev.target.result;
+                // 원본 크기를 알아야 확대·이동 범위를 계산할 수 있으므로 먼저 읽어둔다
+                const probe = new Image();
+                probe.onload = () => {
+                    coverImgData = data;
+                    coverNatural = { w: probe.naturalWidth, h: probe.naturalHeight };
+
+                    const box = document.getElementById('coverBox');
+                    box.style.backgroundImage = `url("${coverImgData}")`;
+                    box.classList.remove('empty');
+
+                    // 새 이미지는 확대/위치를 가운데 기본값으로 초기화
+                    ['zoom', 'posX', 'posY'].forEach(k => {
+                        document.getElementById(COVER_MAP[k].r).value = COVER_DEFAULTS[k];
+                    });
+
+                    // 이미지를 넣었는데 스위치가 꺼져 있으면 자동으로 켜준다
+                    const chk = document.getElementById('chkCover');
+                    if (!chk.checked) { chk.checked = true; updateCover(); }
+                    else { ['zoom', 'posX', 'posY'].forEach(applyCoverVar); renderCoverImage(); }
+
+                    showToast('상단 이미지가 적용되었습니다 ✓');
+                };
+                probe.onerror = () => alert('이미지를 읽지 못했습니다. 다른 파일로 시도해 주세요.');
+                probe.src = data;
             };
             reader.readAsDataURL(f);
             e.target.value = '';
@@ -1215,9 +1284,66 @@
 
         function removeCoverImg() {
             coverImgData = '';
+            coverNatural = { w: 0, h: 0 };
             const box = document.getElementById('coverBox');
             box.style.backgroundImage = 'none';
+            box.style.backgroundSize = '';
+            box.style.backgroundPosition = '';
             box.classList.add('empty');
+        }
+
+        /* [NEW] 이미지를 직접 끌어서 이동. 이동량은 항상 남는 여백 범위(0~100%) 안으로 잘린다. */
+        function bindCoverDrag() {
+            const box = document.getElementById('coverBox');
+            let dragging = false, moved = false, justDragged = false;
+            let sx = 0, sy = 0, startX = 50, startY = 50, geo = null;
+
+            box.addEventListener('pointerdown', (e) => {
+                if (!coverImgData) return;          // 이미지가 없으면 클릭해서 고르는 용도로만 동작
+                geo = coverGeometry();
+                if (!geo) return;
+                dragging = true; moved = false;
+                sx = e.clientX; sy = e.clientY;
+                startX = coverVal('posX'); startY = coverVal('posY');
+                try { box.setPointerCapture(e.pointerId); } catch (err) {}
+                box.classList.add('dragging');
+                e.preventDefault();
+            });
+
+            box.addEventListener('pointermove', (e) => {
+                if (!dragging || !geo) return;
+                const scale = getScale() || 1;      // 화면 확대(zoom-wrap) 보정
+                const dx = (e.clientX - sx) / scale;
+                const dy = (e.clientY - sy) / scale;
+                if (Math.abs(dx) > 2 || Math.abs(dy) > 2) moved = true;
+
+                const rangeX = geo.boxW - geo.rw;   // 0 이하 (0이면 움직일 여백이 없음)
+                const rangeY = geo.boxH - geo.rh;
+                const clamp = v => Math.min(100, Math.max(0, v));
+                const nx = rangeX < 0 ? clamp(startX + (dx / rangeX) * 100) : 50;
+                const ny = rangeY < 0 ? clamp(startY + (dy / rangeY) * 100) : 50;
+
+                document.getElementById('rCoverPosX').value = Math.round(nx);
+                document.getElementById('rCoverPosY').value = Math.round(ny);
+                applyCoverVar('posX');
+                applyCoverVar('posY');
+            });
+
+            const end = (e) => {
+                if (!dragging) return;
+                dragging = false;
+                justDragged = moved;
+                box.classList.remove('dragging');
+                try { box.releasePointerCapture(e.pointerId); } catch (err) {}
+            };
+            box.addEventListener('pointerup', end);
+            box.addEventListener('pointercancel', end);
+
+            // 끌고 나서 이어 터지는 click으로 파일 선택창이 열리지 않도록
+            box.addEventListener('click', () => {
+                if (justDragged) { justDragged = false; return; }
+                pickCoverImg();
+            });
         }
 
         function bindCoverControls() {
@@ -1230,12 +1356,8 @@
                 });
             });
 
-            document.querySelectorAll('#coverFitSeg button').forEach(b => {
-                b.addEventListener('click', () => {
-                    root.style.setProperty('--cover-fit', b.dataset.fit);
-                    document.querySelectorAll('#coverFitSeg button').forEach(x => x.classList.toggle('on', x === b));
-                });
-            });
+            document.getElementById('coverReset').addEventListener('click', resetCoverSettings);
+            bindCoverDrag();
         }
 
         function setMode(m) {
@@ -1249,7 +1371,8 @@
             root.style.setProperty('--a6-h', isL ? '420px' : '595px');
             
             calcZoomScale(); 
-            setTimeout(() => { checkPages(); scrollToPage(0); }, 100);
+            // [FIX] 세로↔가로 전환으로 종이 높이가 바뀌면 상단 이미지가 차지하는 공간도 다시 계산해야 함
+            setTimeout(() => { applyCoverSpace(); renderCoverImage(); checkPages(); scrollToPage(0); }, 100);
         }
 
         function updateTypo() {
@@ -1289,9 +1412,8 @@
             root.style.setProperty(m.css, num + m.unit);
             document.getElementById(m.v).innerText = num + m.unit;
 
-            // [NEW] 하단 문구를 위로 올리면 본문이 그만큼 일찍 끝나도록 여백을 같이 늘린다
-            //       (기본값 15px일 때 기존과 동일한 45px)
-            if (key === 'copyBottom') root.style.setProperty('--copy-space', (30 + num) + 'px');
+            // [NEW] 하단 문구 위치가 바뀌면 본문이 끝나는 지점도 함께 조정
+            if (key === 'copyBottom') applyCopySpace();
         }
 
         function applyAlign(align) {
@@ -1313,6 +1435,16 @@
         }
 
         /* [NEW] 하단 카피라이트 정렬 */
+        /* [FIX] 본문 아래에 비워둘 공간 계산을 한 곳으로 모음.
+           - 하단 문구가 보일 때: 30px + 띄운 높이 (기본 15px → 기존과 동일한 45px)
+           - 꺼져 있을 때: 굳이 45px를 비워둘 이유가 없어 본문이 끝까지 내려가도록 함 */
+        function applyCopySpace() {
+            const hasCopy = document.getElementById('chkCopy').checked;
+            const bottom = parseFloat(document.getElementById('rCopyBottom').value);
+            const b = isFinite(bottom) ? bottom : 15;
+            root.style.setProperty('--copy-space', (hasCopy ? 30 + b : 12) + 'px');
+        }
+
         function applyCopyAlign(align) {
             if (!['left', 'center', 'right'].includes(align)) align = 'center';
             curCopyAlign = align;
