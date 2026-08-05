@@ -540,6 +540,9 @@
                         <button onclick="doHistory('redo')" style="font-weight:500; font-size:0.75rem;">앞으로가기 ↪</button>
                         <button onclick="toggleQuotes()" style="font-weight:700; font-size:0.75rem; color:var(--accent);" title="직선 ↔ 곡선 따옴표 변환">" ↔ “ 변환</button>
                     </div>
+                    <div class="row" style="margin-top:2px;">
+                        <button onclick="toggleEllipsis()" style="width:100%; font-weight:700; font-size:0.75rem; color:var(--accent);" title="온점 세 개 ↔ 말줄임표 변환">... ↔ … 변환</button>
+                    </div>
                 </div>
 
                 <div class="item" style="border-top:1px dashed var(--border); padding-top:15px; margin-top:5px;">
@@ -593,6 +596,8 @@
                         <input type="file" id="pImg" class="hidden" accept="image/*" onchange="handleImg(event, 'paper')">
                         <button onclick="resetPaperBg()" style="width:auto; padding:6px 10px; font-size:0.7rem;">리셋</button>
                     </div>
+                    <span class="lbl" style="font-size:0.72rem; color:var(--text-muted); font-weight:500;">자주 쓰는 종이색 (누르면 바로 적용)</span>
+                    <div class="palette" id="paperPresets"></div>
                 </div>
 
                 <div id="frameBgConfig" class="item hidden" style="margin-top:10px;">
@@ -644,9 +649,9 @@
                             <input type="range" id="rCoverSide" min="0" max="120" step="1" value="30">
                         </div>
                         <div class="slider-row">
-                            <span class="lbl">아래 간격 (제목까지)</span>
+                            <span class="lbl">제목까지 간격</span>
                             <span class="val" id="vCoverGap">26px</span>
-                            <input type="range" id="rCoverGap" min="0" max="100" step="1" value="26">
+                            <input type="range" id="rCoverGap" min="-28" max="100" step="1" value="26">
                         </div>
                         <div class="slider-row">
                             <span class="lbl">모서리 둥글기</span>
@@ -680,6 +685,14 @@
                     <div class="row">
                         <span style="font-size:0.8rem;">상단 제목란 보이기</span>
                         <label class="switch"><input type="checkbox" id="chkTitle" checked onchange="updateLayout()"><span class="slider"></span></label>
+                    </div>
+                    <div class="row" style="margin-top: 10px;">
+                        <span style="font-size:0.8rem;">└ 제목 밑줄(가운데 선)</span>
+                        <label class="switch"><input type="checkbox" id="chkTitleLine" checked onchange="updateLayout()"><span class="slider"></span></label>
+                    </div>
+                    <div class="row" style="margin-top: 10px;">
+                        <span style="font-size:0.8rem;">└ 부제 (Written by)</span>
+                        <label class="switch"><input type="checkbox" id="chkSub" checked onchange="updateLayout()"><span class="slider"></span></label>
                     </div>
                     <div class="row" style="margin-top: 10px;">
                         <span style="font-size:0.8rem;">하단 카피라이트 보이기</span>
@@ -730,7 +743,7 @@
                                 <div class="cover-box empty hidden" id="coverBox" title="클릭해서 이미지 선택 · 끌어서 위치 이동"></div>
                                 <div class="title-box" id="title-box">
                                     <div class="main-title" id="mainTitle" contenteditable="true" data-placeholder="Title"></div>
-                                    <div class="sub-title" contenteditable="true" data-placeholder="Written by Name"></div>
+                                    <div class="sub-title" id="subTitle" contenteditable="true" data-placeholder="Written by Name"></div>
                                 </div>
                                 <div class="copyright-box" id="copyright-box" contenteditable="true"><b>Pair Name:</b> <span style="font-weight:400;">Character A × Character B</span></div>
                             </div>
@@ -814,6 +827,7 @@
             bindTypoControls();  // [NEW] 슬라이더/정렬 버튼 연결
             bindCoverControls(); // [NEW] 상단 이미지 컨트롤 연결
             renderTonePresets(); // [NEW] 기본 톤 팔레트
+            renderPaperPresets();// [NEW] 종이색 팔레트
             loadExportScale();   // [NEW] 저장 화질 설정 복원
             renderFavs();
             document.getElementById('chkFrame').checked = false;
@@ -954,6 +968,32 @@
             checkPages();
         }
 
+        /* [NEW] 온점 세 개 ↔ 말줄임표. 본문에 "..."가 하나라도 있으면 …로,
+           하나도 없으면 반대로 …를 ...로 되돌린다. (따옴표 변환과 같은 방식) */
+        function toggleEllipsis() {
+            const walker = document.createTreeWalker(editor, NodeFilter.SHOW_TEXT, null, false);
+            const textNodes = [];
+            let node, hasDots = false;
+
+            while ((node = walker.nextNode())) {
+                textNodes.push(node);
+                if (/\.{3}/.test(node.nodeValue)) hasDots = true;
+            }
+
+            let changed = 0;
+            textNodes.forEach(n => {
+                const before = n.nodeValue;
+                // 세 개씩 묶어서 바꾸므로 여섯 개는 …… 로 자연스럽게 이어진다
+                const after = hasDots ? before.replace(/\.{3}/g, '…') : before.replace(/…/g, '...');
+                if (after !== before) { n.nodeValue = after; changed++; }
+            });
+
+            if (!changed) { showToast('바꿀 온점(...)이나 말줄임표(…)가 없습니다'); return; }
+            updateStats();
+            checkPages();
+            showToast(hasDots ? '온점 세 개를 말줄임표(…)로 바꿨습니다' : '말줄임표(…)를 온점 세 개로 되돌렸습니다');
+        }
+
         function updatePageIndicator() {
             const pages = getPageCount();
             // [FIX] 글을 지워 페이지 수가 줄어도 currentPageIndex가 그대로라 "5 / 3" 같은 표시가 나오고,
@@ -1050,6 +1090,59 @@
         });
 
         copyBox.addEventListener('input', () => { checkPages(); });
+
+        /* ===== [FIX] 엔터가 한 번에 안 먹던 문제 =====
+           본문은 공백을 살리려고 white-space: pre-wrap 을 쓰는데,
+           이 상태에서 브라우저는 엔터를 줄바꿈 문자("\n")로 넣는다.
+           그런데 문단 맨 끝의 줄바꿈 문자는 화면에 빈 줄로 그려지지 않기 때문에
+           엔터를 눌러도 아무 일도 안 일어난 것처럼 보이고, 두 번 눌러야 한 줄 내려갔다.
+           → 엔터를 직접 처리해 <br> 을 넣고, 문단 끝이면 자리표시용 <br> 을 하나 더 붙여
+             새 줄이 실제로 보이게 한다. (한글 조합 중에는 브라우저에 맡긴다) */
+        function isAtBlockEnd(node) {
+            let n = node;
+            while (n && n !== editor) {
+                if (n.nextSibling) return false;
+                const parent = n.parentNode;
+                if (!parent) return true;
+                if (parent === editor || isBlockTag(parent)) return true;
+                n = parent;
+            }
+            return true;
+        }
+
+        function insertLineBreakAtCaret() {
+            const sel = window.getSelection();
+            if (!sel.rangeCount) return false;
+            const range = sel.getRangeAt(0);
+            if (!editor.contains(range.commonAncestorContainer)) return false;
+
+            range.deleteContents();
+            const br = document.createElement('br');
+            range.insertNode(br);
+
+            // 문단 맨 끝의 <br> 은 빈 줄로 그려지지 않으므로 자리표시용을 하나 더
+            if (isAtBlockEnd(br)) {
+                br.parentNode.insertBefore(document.createElement('br'), br.nextSibling);
+            }
+
+            const after = document.createRange();
+            after.setStartAfter(br);
+            after.collapse(true);
+            sel.removeAllRanges();
+            sel.addRange(after);
+            return true;
+        }
+
+        editor.addEventListener('keydown', (e) => {
+            if (e.key !== 'Enter') return;
+            if (e.shiftKey || e.ctrlKey || e.metaKey || e.altKey) return;
+            if (e.isComposing || e.keyCode === 229) return;   // 한글 조합 중이면 IME가 처리
+            if (!insertLineBreakAtCaret()) return;
+            e.preventDefault();
+            updateStats();
+            checkPages();
+            setTimeout(scrollToCursor, 50);
+        });
 
         editor.addEventListener('keyup', (e) => {
             if(['ArrowRight', 'ArrowLeft', 'ArrowDown', 'ArrowUp', 'Enter'].includes(e.key)) {
@@ -1159,6 +1252,12 @@
             if(hasTitle) tBox.classList.remove('hidden');
             else tBox.classList.add('hidden');
 
+            // [NEW] 제목 밑줄(가운데 선) / 부제 개별 on-off
+            const lineOn = document.getElementById('chkTitleLine').checked;
+            const subOn = document.getElementById('chkSub').checked;
+            document.getElementById('mainTitle').style.borderBottomColor = lineOn ? '' : 'transparent';
+            document.getElementById('subTitle').classList.toggle('hidden', !subOn);
+
             // [NEW] 제목 + 상단 이미지가 차지하는 공간을 함께 계산해 본문 시작 위치를 잡는다
             applyCoverSpace();
 
@@ -1231,7 +1330,8 @@
 
             // 본문 첫 컬럼에서 비워둘 높이. 페이지 밖으로 넘칠 만큼 크게 잡으면
             // 첫 페이지 글자가 통째로 밀려나므로 남는 높이 안에서 잘라준다.
-            let reserve = (hasTitle ? 80 : 0) + block;
+            const subOn2 = document.getElementById('chkSub').checked;
+            let reserve = (hasTitle ? (subOn2 ? 80 : 58) : 0) + block;
             const avail = editor.clientHeight;
             if (avail > 80 && reserve > avail - 40) reserve = avail - 40;
             root.style.setProperty('--title-space-extra', reserve + 'px');
@@ -1860,6 +1960,39 @@
             e.target.value = '';
         }
 
+        /* [NEW] 종이 배경 딸깍 프리셋 */
+        const PAPER_PRESETS = [
+            { c: '#ffffff', n: '흰색' },
+            { c: '#fdfaf3', n: '미색' },
+            { c: '#f7f1e3', n: '크림' },
+            { c: '#f4f4f5', n: '연회색' },
+            { c: '#fdf2f6', n: '연분홍' },
+            { c: '#f1f5fb', n: '연하늘' },
+            { c: '#f1f7f2', n: '연둣빛' },
+            { c: '#2a2a2e', n: '진회색' },
+            { c: '#111111', n: '검정' }
+        ];
+
+        function applyPaperTone(hex) {
+            document.getElementById('pTop').value = hex;
+            document.getElementById('pBot').value = hex;
+            globalPaperBgImg = 'none';   // 배경 사진이 있었다면 해제
+            updatePaperBg();
+        }
+
+        function renderPaperPresets() {
+            const box = document.getElementById('paperPresets');
+            box.innerHTML = '';
+            PAPER_PRESETS.forEach(p => {
+                const d = document.createElement('div');
+                d.className = 'swatch';
+                d.style.background = p.c;
+                d.title = p.n + ' (' + p.c + ')';
+                d.addEventListener('click', () => applyPaperTone(p.c));
+                box.appendChild(d);
+            });
+        }
+
         function resetPaperBg() {
             document.getElementById('pTop').value = '#ffffff';
             document.getElementById('pBot').value = '#ffffff';
@@ -1933,6 +2066,61 @@
             if (v && Array.from(sel.options).some(o => o.value === v)) sel.value = v;
         }
 
+        /* ===== [FIX] 저장한 이미지에서 사진만 흐릿하던 문제 =====
+           html2canvas는 background-image를 "화면 CSS 크기"로 한 번 줄인 뒤 그것을 확대해 그린다.
+           그래서 글자는 4배로 또렷한데 배경 사진만 1배 해상도를 늘린 상태가 됐다.
+           반대로 <img> 요소는 원본에서 바로 그리므로 선명하다.
+           → 저장용 복제본에서만 배경 사진을 같은 위치·크기의 <img>로 바꿔 넣는다. */
+        const imgSizeCache = {};
+        function loadImgSize(src) {
+            return new Promise(res => {
+                if (imgSizeCache[src]) return res(imgSizeCache[src]);
+                const i = new Image();
+                i.onload = () => { imgSizeCache[src] = { w: i.naturalWidth, h: i.naturalHeight }; res(imgSizeCache[src]); };
+                i.onerror = () => res(null);
+                i.src = src;
+            });
+        }
+
+        function urlOfBg(v) {
+            const m = /url\(\s*["']?(.*?)["']?\s*\)/.exec(v || '');
+            return m ? m[1] : null;
+        }
+
+        // background-size: cover / position: center 를 실제 px 값으로 환산
+        async function coverFitRect(src, boxW, boxH) {
+            if (!src || !boxW || !boxH) return null;
+            const sz = await loadImgSize(src);
+            if (!sz || !sz.w || !sz.h) return null;
+            const k = Math.max(boxW / sz.w, boxH / sz.h);
+            const dw = sz.w * k, dh = sz.h * k;
+            return { src, x: (boxW - dw) / 2, y: (boxH - dh) / 2, w: dw, h: dh };
+        }
+
+        // 저장 직전, 복제본에 넣을 <img> 정보를 미리 계산해 둔다
+        async function collectHiResBgs() {
+            const out = { cover: null, paper: null, frame: null };
+
+            const box = document.getElementById('coverBox');
+            if (coverImgData && coverNatural.w && !box.classList.contains('hidden')) {
+                const g = coverGeometry();
+                if (g) out.cover = {
+                    src: coverImgData,
+                    x: (g.boxW - g.rw) * (coverVal('posX') / 100),
+                    y: (g.boxH - g.rh) * (coverVal('posY') / 100),
+                    w: g.rw, h: g.rh
+                };
+            }
+
+            const paperEl = document.querySelector('.page-paper');
+            if (paperEl) out.paper = await coverFitRect(urlOfBg(globalPaperBgImg), paperEl.clientWidth, paperEl.clientHeight);
+
+            const frameEl = document.querySelector('.page-bg');
+            if (frameEl) out.frame = await coverFitRect(urlOfBg(globalFrameBgImg), frameEl.clientWidth, frameEl.clientHeight);
+
+            return out;
+        }
+
         async function captureWideCanvas() {
             // [FIX] CDN 차단·오프라인 등으로 html2canvas가 안 뜨면 ReferenceError만 나고
             //       버튼이 '추출 중...'인 채로 굳어버렸음 → 미리 확인
@@ -1975,6 +2163,8 @@
 
             await new Promise(r => setTimeout(r, 150));
 
+            const hiResBgs = await collectHiResBgs();
+
             const capScale = getExportScale();
             lastCaptureScale = capScale;
             if (capScale < parseInt(document.getElementById('exportScale').value, 10)) {
@@ -1999,8 +2189,38 @@
                         // 복제본에만 형광펜 보정 적용 (라이브 화면은 그대로 둔다).
                         // 복제본 body에 is-exporting을 달아 화면용 형광펜 CSS를 끈 뒤 수동 padding 적용 → 중복 방지.
                         if (clonedDoc.body) clonedDoc.body.classList.add('is-exporting');
+
+                        // [FIX] 배경 사진을 원본 해상도로 그리기 위해 <img>로 교체
+                        const putImg = (el, r, z) => {
+                            el.style.backgroundImage = 'none';
+                            const im = clonedDoc.createElement('img');
+                            im.src = r.src;
+                            im.style.cssText = `position:absolute; left:${r.x}px; top:${r.y}px; width:${r.w}px; height:${r.h}px; max-width:none; display:block;` + (typeof z === 'number' ? ` z-index:${z};` : '');
+                            el.insertBefore(im, el.firstChild);
+                        };
+
+                        if (hiResBgs.cover) {
+                            const cb = clonedDoc.getElementById('coverBox');
+                            if (cb) putImg(cb, hiResBgs.cover);
+                        }
+                        if (hiResBgs.paper) {
+                            clonedDoc.querySelectorAll('.page-paper').forEach(el => {
+                                el.style.position = 'relative';
+                                putImg(el, hiResBgs.paper);
+                            });
+                        }
+                        if (hiResBgs.frame) {
+                            clonedDoc.querySelectorAll('.page-bg').forEach(el => {
+                                el.style.position = 'relative';
+                                putImg(el, hiResBgs.frame, 0);
+                                // 종이가 항상 액자 사진 위에 오도록 순서를 못박는다
+                                const paper = el.querySelector('.page-paper');
+                                if (paper) { paper.style.position = 'relative'; paper.style.zIndex = '1'; }
+                            });
+                        }
+
                         const clonedEditor = clonedDoc.getElementById('editor');
-                        if (!clonedEditor) return;
+                        if (!clonedEditor) return;   // (배경 교체는 위에서 이미 끝났음)
                         const spans = Array.from(clonedEditor.querySelectorAll('span')).filter(s => s.style.backgroundColor && s.style.backgroundColor !== 'transparent' && s.style.backgroundColor !== 'rgba(0, 0, 0, 0)');
                         spans.forEach((span, idx) => {
                             const bg = span.style.backgroundColor;
