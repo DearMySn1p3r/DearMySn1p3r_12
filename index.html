@@ -549,11 +549,11 @@
                     <label>제목 / 보조 텍스트 색상</label>
                     <div class="row" style="background:var(--bg-panel); border:1px solid var(--border); padding:8px 12px; border-radius:8px;">
                         <div style="display:flex; align-items:center; gap:6px;">
-                            <input type="color" onchange="root.style.setProperty('--meta-title-color', this.value)" style="width:24px; height:24px; padding:0; border:none; background:none; cursor:pointer;" title="메인 제목 색상">
+                            <input type="color" id="mtColor" onchange="root.style.setProperty('--meta-title-color', this.value)" style="width:24px; height:24px; padding:0; border:none; background:none; cursor:pointer;" title="메인 제목 색상">
                             <span style="font-size:0.7rem; font-weight:600;">제목</span>
                         </div>
                         <div style="display:flex; align-items:center; gap:6px;">
-                            <input type="color" onchange="root.style.setProperty('--meta-sub-color', this.value)" style="width:24px; height:24px; padding:0; border:none; background:none; cursor:pointer;" title="서브/카피라이트 색상">
+                            <input type="color" id="msColor" onchange="root.style.setProperty('--meta-sub-color', this.value)" style="width:24px; height:24px; padding:0; border:none; background:none; cursor:pointer;" title="서브/카피라이트 색상">
                             <span style="font-size:0.7rem; font-weight:600;">서브/카피</span>
                         </div>
                         <button onclick="root.style.removeProperty('--meta-title-color'); root.style.removeProperty('--meta-sub-color');" style="width:auto; padding:6px 10px; font-size:0.7rem;">초기화</button>
@@ -1763,6 +1763,8 @@
         }
 
         // 본문 전체 글자색 바꾸기 (되돌리기 ↩ 로 취소 가능)
+        let wholeBodyColored = false;   // 본문 전체에 같은 색을 씌운 상태인지
+
         function applyColorAll(hex) {
             const prevL = workspace.scrollLeft, prevT = workspace.scrollTop;
             editor.focus({ preventScroll: true });
@@ -1779,6 +1781,7 @@
             sel.removeAllRanges();
             savedRange = null;
             editor.style.color = hex;   // 앞으로 입력할 글자도 같은 색으로
+            wholeBodyColored = true;
 
             workspace.scrollLeft = prevL;
             workspace.scrollTop = prevT;
@@ -1792,6 +1795,7 @@
             document.getElementById('tc').value = hex;
             if (hasEditorSelection()) {
                 applyFmt('foreColor', 'tc');
+                wholeBodyColored = false;   // 부분 색이 생겼으므로 일괄 갱신 대상에서 제외
                 showToast(`선택한 글자를 ${hex} 로 바꿨습니다`);
             } else {
                 applyColorAll(hex);
@@ -1973,11 +1977,47 @@
             { c: '#111111', n: '검정' }
         ];
 
+        // 사람 눈이 느끼는 밝기(상대 휘도)
+        function luminance(hex) {
+            const h = String(hex).replace('#', '');
+            const full = h.length === 3 ? h.split('').map(c => c + c).join('') : h;
+            const c = [0, 2, 4].map(i => parseInt(full.slice(i, i + 2), 16) / 255);
+            const f = v => (v <= 0.03928 ? v / 12.92 : Math.pow((v + 0.055) / 1.055, 2.4));
+            return 0.2126 * f(c[0]) + 0.7152 * f(c[1]) + 0.0722 * f(c[2]);
+        }
+
+        /* [NEW] 종이색을 고르면 글씨색도 읽기 좋게 함께 맞춘다.
+           - 어두운 종이 → 밝은 글씨 / 밝은 종이 → 어두운 글씨
+           - 단어별로 따로 칠해둔 색은 건드리지 않는다 (본문 기본색만 바꿈) */
+        function syncTextToPaper(hex) {
+            const dark = luminance(hex) < 0.45;
+            const body  = dark ? '#f4f4f5' : '#27272a';
+            const title = dark ? '#fafafa' : '#18181b';
+            const sub   = dark ? '#a1a1aa' : '#71717a';
+
+            if (wholeBodyColored) applyColorAll(body);   // 전체를 한 색으로 칠해둔 상태면 통째로 갱신
+            else editor.style.color = body;
+
+            root.style.setProperty('--meta-title-color', title);
+            root.style.setProperty('--meta-sub-color', sub);
+
+            const mt = document.getElementById('mtColor');
+            const ms = document.getElementById('msColor');
+            if (mt) mt.value = title;
+            if (ms) ms.value = sub;
+            document.getElementById('tc').value = body;
+
+            return dark;
+        }
+
         function applyPaperTone(hex) {
             document.getElementById('pTop').value = hex;
             document.getElementById('pBot').value = hex;
             globalPaperBgImg = 'none';   // 배경 사진이 있었다면 해제
             updatePaperBg();
+
+            const dark = syncTextToPaper(hex);
+            showToast(dark ? '어두운 종이에 맞춰 글씨를 밝게 바꿨습니다' : '종이색에 맞춰 글씨색을 조정했습니다');
         }
 
         function renderPaperPresets() {
