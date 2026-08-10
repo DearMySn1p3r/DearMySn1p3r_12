@@ -289,9 +289,19 @@
 
         .main-title:empty::before, .sub-title:empty::before, .copyright-box:empty::before { 
             content: attr(data-placeholder); color: var(--text-muted); font-style: normal; 
-            pointer-events: none; text-indent: 0 !important; display: block; font-weight: 400; text-align: inherit;
+            pointer-events: none; text-indent: 0 !important; display: inline; font-weight: 400; text-align: inherit;
         }
-        .editor:empty::after { 
+        /* [FIX] 커서(캐럿)가 안내문보다 위에 찍히던 문제
+           - 본문 첫 컬럼 여백은 .editor::before 라는 float 로 만들어져 있는데,
+             CSS 규칙상 '내용이 없는 줄(빈 라인 박스)'은 float 를 피해 가지 않는다.
+             그래서 글이 비어 있을 때 캐럿만 float 위(맨 위)에 남아 있었다.
+           - 비어 있을 때는 컬럼이 어차피 1개뿐이므로, float 를 끄고 같은 높이만큼
+             padding-top 을 주면 캐럿과 안내문이 정확히 같은 줄에 놓인다.
+           - 첫 글자를 입력하는 순간 is-empty 가 빠지면서 float 방식으로 되돌아가는데,
+             높이가 동일해서 글자가 움직이지 않는다. */
+        .editor.is-empty { padding-top: var(--title-space-extra); }
+        .editor.is-empty::before { display: none; }
+        .editor.is-empty::after { 
             content: attr(data-placeholder); color: var(--text-muted); font-style: normal; 
             pointer-events: none; text-indent: inherit; display: block; font-weight: 400;
         }
@@ -748,7 +758,7 @@
                                 <div class="copyright-box" id="copyright-box" contenteditable="true"><b>Pair Name:</b> <span style="font-weight:400;">Character A × Character B</span></div>
                             </div>
                             
-                            <div class="editor" id="editor" contenteditable="true" data-placeholder="이곳을 클릭하여 글을 작성하세요. 복사 붙여넣기 시 텍스트 서식이 자동으로 제거됩니다."></div>
+                            <div class="editor is-empty" id="editor" contenteditable="true" data-placeholder="이곳을 클릭하여 글을 작성하세요. 복사 붙여넣기 시 텍스트 서식이 자동으로 제거됩니다."></div>
                         </div>
                     </div>
                 </div>
@@ -1151,7 +1161,19 @@
         });
         editor.addEventListener('click', () => { setTimeout(scrollToCursor, 50); });
         
+        /* [FIX] 안내문 표시 여부를 직접 관리한다.
+           :empty 만 쓰면 글을 전부 지운 뒤 브라우저가 남기는 <br> 하나 때문에
+           안내문이 다시 나타나지 않는다. 그 경우까지 빈 상태로 본다. */
+        function isEditorEmpty() {
+            const h = editor.innerHTML.trim();
+            return h === '' || h === '<br>' || h === '<br/>' || h === '<br />';
+        }
+        function updateEditorPlaceholder() {
+            editor.classList.toggle('is-empty', isEditorEmpty());
+        }
+
         function updateStats() {
+            updateEditorPlaceholder();
             const text = editor.innerText || "";
             const chars = text.replace(/\s/g, '').length;
             document.getElementById('charCount').innerText = chars;
