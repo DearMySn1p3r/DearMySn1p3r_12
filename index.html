@@ -288,8 +288,6 @@ input:checked+.slider:before{transform:translateX(15px)}
   padding:0 16px;gap:10px;border-bottom:1px solid var(--line);background:var(--panel);z-index:50;
 }
 .topbar .grp{display:flex;align-items:center;gap:6px}
-.docname{font-size:.76rem;font-weight:600;color:var(--txt-2);letter-spacing:-.2px;
-  max-width:38vw;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .zoomval{font-size:.7rem;font-weight:700;min-width:42px;text-align:center;font-variant-numeric:tabular-nums}
 .tb{
   height:30px;min-width:30px;padding:0 9px;border-radius:8px;border:1px solid var(--line);
@@ -510,7 +508,6 @@ body:not(.is-exporting) .editor span[style*="background-color"]:not([style*="bac
   .scroll-content{padding:18px 14px 34px;align-items:flex-start}
   .close-mobile{display:flex}
   .topbar{padding:0 10px}
-  .docname{display:none}
 }
 </style>
 </head>
@@ -1255,7 +1252,6 @@ body:not(.is-exporting) .editor span[style*="background-color"]:not([style*="bac
   <div class="topbar">
     <div class="grp">
       <button class="tb" onclick="toggleSidebar()" title="패널">☰</button>
-      <span class="docname" id="docName">Log Archive</span>
     </div>
     <div class="grp">
       <button class="tb" onclick="prevPage()" title="이전 장">◀</button>
