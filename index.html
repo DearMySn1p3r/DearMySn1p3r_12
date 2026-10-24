@@ -40,6 +40,7 @@
   --ed-extra-left:0px;     /* 세로 제목을 피해 비우는 폭 */
   --ed-extra-right:0px;
   --title-gap:26px;        /* 제목 블록과 본문 사이 */
+  --title-top:0px;         /* 제목 위에 더 비우는 여백 (첫 장만) */
   --pad-top:34px;          /* 본문 위 여백 */
   --copy-space:45px;       /* 본문 아래 확보 공간 */
   --title-space-extra:80px;/* 첫 단 위쪽에 비워두는 높이 (JS 계산) */
@@ -365,7 +366,7 @@ body.is-exporting .p-guide,body:not(.show-guide) .p-guide{display:none}
 .meta-layer{position:absolute;top:0;left:0;width:var(--pw);height:var(--ph);pointer-events:none;z-index:20}
 
 .title-box{
-  position:absolute;top:calc(var(--frame-pad) + var(--pad-top) + var(--cover-block));left:0;right:0;margin:0 auto;
+  position:absolute;top:calc(var(--frame-pad) + var(--pad-top) + var(--cover-block) + var(--title-top));left:0;right:0;margin:0 auto;
   width:calc(var(--pw) - (var(--frame-pad) * 2));pointer-events:auto;transition:top .2s;
   display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:var(--meta-align);
 }
@@ -974,6 +975,8 @@ body:not(.is-exporting) .editor span[style*="background-color"]:not([style*="bac
             <label class="switch"><input type="checkbox" id="chkTitleLine" checked onchange="updateLayout()"><span class="slider"></span></label></div>
           <div class="trow"><span class="sub">└ 부제 (Written by)</span>
             <label class="switch"><input type="checkbox" id="chkSub" checked onchange="updateLayout()"><span class="slider"></span></label></div>
+          <div class="sl" style="padding:4px 0 6px"><span class="lbl">제목 위 여백 <em style="font-style:normal;opacity:.7">· 첫 장만</em></span><span class="val" id="vTitleTop">0px</span>
+            <input type="range" id="rTitleTop" min="0" max="300" step="1" value="0" data-css="--title-top" data-unit="px" data-act="cover pages"></div>
 
           <div class="fld">
             <label>제목 모양</label>
@@ -1988,7 +1991,7 @@ function applyCoverSpace(){
   let base = 0;
   if(on('chkTitle')){
     const h = $('title-box').offsetHeight || 0;
-    base = h + rv('rTitleGap');
+    base = h + rv('rTitleGap') + rv('rTitleTop');
   }
   let reserve = Math.max(base + block, vtTopReserve);
 
@@ -2753,7 +2756,7 @@ const BASE = {
   chkBorder:false, borderColor:'#8b7d5e', rBorderInset:18, rBorderW:1,
   chkFrame:false, rFramePad:30, fTop:'#f4f4f5', fBot:'#f4f4f5',
   chkTitle:true, chkMainTitle:true, chkTitleLine:true, chkSub:true,
-  rTitleSize:1.35, rTitleTrack:0, rTitleGap:22, rSubSize:0.62, rTLineW:1,
+  rTitleTop:0, rTitleSize:1.35, rTitleTrack:0, rTitleGap:22, rSubSize:0.62, rTLineW:1,
   mtColor:'#1f1f22', msColor:'#9a9aa2', tlColor:'#c7c7cc',
   chkCopy:true, rCopySize:0.56, rCopySide:0, rCopyBottom:16, cpColor:'#9a9aa2',
   chkCover:false, rCoverH:190, rCoverTop:30, rCoverSide:30, rCoverGap:26, rCoverRadius:0,
