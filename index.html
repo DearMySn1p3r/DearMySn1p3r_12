@@ -329,6 +329,37 @@ body.is-exporting .page-bg{box-shadow:none}
 }
 body.is-exporting .p-guide,body:not(.show-guide) .p-guide{display:none}
 
+/* ---- HTML 장식 ---- */
+.p-cx{z-index:0}
+.fx-layer{position:absolute;top:0;left:0;height:100%;display:flex;gap:var(--page-gap);z-index:30;pointer-events:none;width:max-content}
+.fx-page{width:var(--pw);height:var(--ph);flex-shrink:0;padding:var(--frame-pad);position:relative;transition:padding .3s cubic-bezier(.4,0,.2,1)}
+.fx-in{width:100%;height:100%;position:relative;overflow:hidden;border-radius:var(--page-radius);pointer-events:none}
+.cxs{
+  --cx-ink:var(--meta-title-color);--cx-sub:var(--meta-sub-color);--cx-line:var(--tline-color);--cx-paper:var(--paper-bg-color);
+  --cx-title-font:var(--title-font);--cx-meta-font:var(--meta-font);
+  --cx-w:calc(var(--pw) - var(--frame-pad) * 2);--cx-h:calc(var(--ph) - var(--frame-pad) * 2);
+  pointer-events:none;-webkit-user-select:none;user-select:none;overflow:hidden;
+}
+:where(.cxs){color:var(--cx-ink);font-family:var(--cx-font);font-size:12px;line-height:1.5;font-weight:400;letter-spacing:0;text-align:left;word-break:keep-all;overflow-wrap:break-word}
+.cxs *,.cxs *::before,.cxs *::after{box-sizing:content-box}
+.cx-code{
+  width:100%;min-height:230px;padding:10px 11px;border:1px solid var(--line);border-radius:9px;background:var(--panel);color:var(--txt);
+  font:.7rem/1.6 ui-monospace,SFMono-Regular,Menlo,Consolas,'D2Coding',monospace;white-space:pre;overflow:auto;resize:vertical;tab-size:2;-moz-tab-size:2;
+}
+.cx-code:focus{outline:none;border-color:var(--txt-2)}
+.cx-msg{display:none;color:var(--danger)}
+.cx-chips{display:flex;flex-wrap:wrap;gap:6px}
+.cx-chip{display:inline-flex;align-items:center;gap:7px;max-width:100%;padding:5px 6px 5px 10px;border:1px solid var(--line);border-radius:20px;
+  background:var(--panel);color:var(--txt);font-size:.7rem;font-weight:600;font-family:inherit;cursor:pointer;transition:.15s}
+.cx-chip:hover{border-color:var(--txt-2)}
+.cx-chip .nm{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:150px}
+.cx-chip .cx-th{width:18px;height:18px;border-radius:4px;background:center/cover no-repeat;flex:0 0 auto;margin-left:-4px}
+.cx-chip .x{width:18px;height:18px;border-radius:50%;background:var(--panel-2);color:var(--txt-2);display:flex;align-items:center;justify-content:center;font-size:11px;flex:0 0 auto}
+.cx-chip .x:hover{background:var(--txt);color:var(--panel)}
+.cx-help{font-size:.67rem;color:var(--txt-2);line-height:1.85}
+.cx-help b{color:var(--txt)}
+.cx-help code{font-family:ui-monospace,Menlo,Consolas,monospace;font-size:.64rem;background:var(--panel-2);border-radius:4px;padding:1px 4px;white-space:nowrap}
+
 /* ---- 본문/메타 ---- */
 .content-layer{position:relative;z-index:10;display:flex}
 .meta-layer{position:absolute;top:0;left:0;width:var(--pw);height:var(--ph);pointer-events:none;z-index:20}
@@ -524,6 +555,7 @@ body:not(.is-exporting) .editor span[style*="background-color"]:not([style*="bac
     <button class="tab" data-pane="p-text" onclick="switchTab('p-text')">본문</button>
     <button class="tab" data-pane="p-page" onclick="switchTab('p-page')">지면</button>
     <button class="tab" data-pane="p-elem" onclick="switchTab('p-elem')">요소</button>
+    <button class="tab" data-pane="p-html" onclick="switchTab('p-html')">HTML</button>
   </div>
 
   <div class="side-scroll">
@@ -1214,6 +1246,96 @@ body:not(.is-exporting) .editor span[style*="background-color"]:not([style*="bac
       </div>
     </div>
 
+    <!-- ============ 5. HTML ============ -->
+    <div id="p-html" class="pane">
+
+      <div class="sect open">
+        <div class="sh" onclick="toggleSect(this)">
+          <span class="t"><i>&lt;/&gt;</i>HTML 장식</span><span class="chev">▼</span>
+        </div>
+        <div class="sb">
+          <p class="hint">직접 만든 HTML·CSS를 장마다 얹어요. 테두리·스티커·도장·워터마크처럼 원하는 꾸밈을 코드로 그릴 수 있고, 저장·복사한 이미지에도 그대로 들어갑니다.</p>
+          <div class="trow"><span>HTML 장식 켜기</span>
+            <label class="switch"><input type="checkbox" id="cxOn" data-nosave onchange="setCxOn(this.checked)"><span class="slider"></span></label></div>
+          <div class="fld">
+            <label>자리</label>
+            <div class="seg" id="cxPosSeg">
+              <button type="button" data-cxpos="back" onclick="setCxPos('back')">글 뒤 · 배경</button>
+              <button type="button" data-cxpos="front" onclick="setCxPos('front')">글 앞 · 덮개</button>
+            </div>
+            <p class="hint">글 앞 장식은 눌러도 그대로 통과돼서, 장식 아래 글도 평소처럼 고칠 수 있어요.</p>
+          </div>
+          <div class="fld">
+            <label>보일 장</label>
+            <div class="seg" id="cxPagesSeg">
+              <button type="button" data-cxpg="all" onclick="setCxPages('all')">모든 장</button>
+              <button type="button" data-cxpg="first" onclick="setCxPages('first')">첫 장</button>
+              <button type="button" data-cxpg="last" onclick="setCxPages('last')">끝 장</button>
+              <button type="button" data-cxpg="odd" onclick="setCxPages('odd')">홀수</button>
+              <button type="button" data-cxpg="even" onclick="setCxPages('even')">짝수</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="sect open">
+        <div class="sh" onclick="toggleSect(this)">
+          <span class="t"><i>✎</i>코드</span><span class="chev">▼</span>
+        </div>
+        <div class="sb">
+          <div class="fld">
+            <label>예시로 시작하기 <em>누르면 코드가 바뀌어요</em></label>
+            <div class="g3" id="cxTpl"></div>
+          </div>
+          <div class="fld">
+            <label>HTML · CSS <em>&lt;style&gt;도 함께 넣어요</em></label>
+            <textarea class="cx-code" id="cxCode" spellcheck="false" autocapitalize="off" autocomplete="off" aria-label="HTML·CSS 코드"
+              placeholder="&lt;style&gt;&#10;  .star{ position:absolute; right:24px; top:24px; }&#10;&lt;/style&gt;&#10;&lt;div class=&quot;star&quot;&gt;✦&lt;/div&gt;"></textarea>
+            <p class="hint cx-msg" id="cxMsg"></p>
+          </div>
+          <input type="file" id="cxFile" accept=".html,.htm,.svg,.txt,text/html,image/svg+xml" style="display:none" onchange="onCxFile(this)">
+          <input type="file" id="cxImgInput" accept="image/*" style="display:none" onchange="onCxImg(this)">
+          <div class="g3">
+            <button type="button" class="btn sm" onclick="$('cxFile').click()">파일 불러오기</button>
+            <button type="button" class="btn sm" onclick="$('cxImgInput').click()">이미지 넣기</button>
+            <button type="button" class="btn sm warn" onclick="cxClear()">비우기</button>
+          </div>
+          <button type="button" class="btn sm dash" id="cxRestore" style="display:none" onclick="cxRestore()">↶ 바로 전 코드 되살리기</button>
+          <div class="fld" id="cxImgWrap" style="display:none">
+            <label>올린 이미지 <em>누르면 커서 자리에 넣어요</em></label>
+            <div class="cx-chips" id="cxImgs"></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="sect open">
+        <div class="sh" onclick="toggleSect(this)">
+          <span class="t"><i>★</i>내 HTML</span><span class="chev">▼</span>
+        </div>
+        <div class="sb">
+          <div class="row">
+            <input type="text" id="cxName" data-nosave maxlength="20" placeholder="이름 (예: 노을 액자)">
+            <button type="button" class="btn sm" onclick="saveCxLib()">＋ 저장</button>
+          </div>
+          <div class="cx-chips" id="cxLib"></div>
+        </div>
+      </div>
+
+      <div class="sect">
+        <div class="sh" onclick="toggleSect(this)">
+          <span class="t"><i>?</i>쓸 수 있는 값 · 알아 둘 것</span><span class="chev">▼</span>
+        </div>
+        <div class="sb">
+          <div class="cx-help">
+            <b>글자 자리</b> — <code>{{title}}</code> 제목 · <code>{{subtitle}}</code> 부제 · <code>{{copyright}}</code> 하단 문구 · <code>{{head}}</code> 머리글 · <code>{{page}}</code> 쪽번호 · <code>{{pages}}</code> 전체 장 수 · <code>{{date}}</code> 오늘 날짜 · <code>{{img1}}</code> 올린 이미지<br>
+            <b>지면에 맞춘 값</b> — <code>var(--cx-ink)</code> 제목색 · <code>var(--cx-sub)</code> 부제색 · <code>var(--cx-line)</code> 제목 선 색 · <code>var(--cx-acc)</code> 테두리 선 색 · <code>var(--cx-paper)</code> 종이색 · <code>var(--cx-font)</code> 본문 서체 · <code>var(--cx-title-font)</code> · <code>var(--cx-meta-font)</code> · <code>var(--cx-w)</code> · <code>var(--cx-h)</code> 종이 폭·높이<br>
+            <b>크기 기준</b> — 종이 한 장(액자 여백 안쪽)이 화면 크기예요. <code>body</code>는 종이 전체, <code>100vh</code>·<code>100vw</code>는 종이 높이·폭이에요. 판형 크기 그대로의 px(예: A6 세로 420 × 595)로 그리면 저장 화질에 맞춰 함께 커져요.<br>
+            <b>안 되는 것</b> — 이미지로 저장되므로 스크립트·애니메이션은 쓰이지 않아요. 필터·블렌드·마스크 같은 최신 CSS는 저장한 그림에서 다르게 나올 수 있어요.
+          </div>
+        </div>
+      </div>
+    </div>
+
   </div>
 
   <div class="side-foot">
@@ -1282,6 +1404,7 @@ body:not(.is-exporting) .editor span[style*="background-color"]:not([style*="bac
               </div>
               <div class="editor is-empty" id="editor" contenteditable="true" data-placeholder="이곳을 눌러 글을 쓰거나 붙여넣으세요."></div>
             </div>
+            <div class="fx-layer" id="fxLayer"></div>
           </div>
         </div>
       </div>
@@ -1503,6 +1626,7 @@ function makePageEl(){
       '<div class="pl p-rule"></div>' +
       '<div class="pl p-vignette"></div>' +
       '<div class="pl p-spine"></div>' +
+      '<div class="pl p-cx"></div>' +
       '<div class="pl p-border"><div class="p-border-in"></div><i class="cn"></i><i class="cn"></i><i class="cn"></i><i class="cn"></i></div>' +
       '<div class="p-guide"></div>' +
       '<div class="p-head"></div>' +
@@ -2348,6 +2472,7 @@ function renderLayers(){
     const gd = pg.querySelector('.p-guide');
     if(gd){ gd.style.left = px + 'px'; gd.style.right = px + 'px'; }
   });
+  renderCx();
 }
 
 /* ============================================================
@@ -2786,7 +2911,7 @@ function resetAll(){
 function collectState(){
   const s = {};
   document.querySelectorAll('#sidebar input[id], #sidebar select[id]').forEach(el => {
-    if(el.type === 'file') return;
+    if(el.type === 'file' || el.hasAttribute('data-nosave')) return;
     s[el.id] = (el.type === 'checkbox') ? el.checked : el.value;
   });
   s._size = curSize; s._align = curAlign; s._metaAlign = curMetaAlign; s._copyAlign = curCopyAlign;
@@ -2795,6 +2920,7 @@ function collectState(){
   s._textColor = editor.style.color || '';
   s._tpl = curTemplate;
   s._cw = PAGE.w; s._ch = PAGE.h;
+  s._cx = { on:CX.on, pos:CX.pos, pages:CX.pages, html:CX.html };
   return s;
 }
 function applyState(s){
@@ -2823,6 +2949,7 @@ function applyState(s){
 
   editor.style.color = s._textColor || '';
   wholeBodyColored = false;
+  if(s._cx) cxFromState(s._cx);
 
   if(s._size){ curSize = s._size; const sz = SIZES.find(x => x.id === s._size); if(sz){ PAGE = { w:sz.w, h:sz.h }; } }
   if(!s._size && s._cw && s._ch) PAGE = { w:+s._cw, h:+s._ch };
@@ -3179,6 +3306,434 @@ async function copyCurrentPage(){
 }
 
 /* ============================================================
+   19. HTML 장식
+   직접 만든 HTML·CSS를 장마다 얹는다. 자리: 글 뒤(배경) · 글 앞(덮개).
+   앱 화면이 망가지지 않도록 —
+   · 스크립트·on… 속성은 뺀다(이미지로 저장되므로 쓰이지도 않는다)
+   · class·id 이름 앞에 cx_ 를 붙이고 CSS 선택자도 똑같이 바꾼 뒤, 장마다 .cxp{번호} 안에 가둔다
+   · html·:root 는 장 틀로, body 는 그 안의 상자(.cxb)로 옮긴다
+   · vh·vw 는 화면이 아니라 종이 크기 기준으로 바꾼다
+   ============================================================ */
+const CX_MARK = '\u0003';   /* 장마다 .cxp0 · .cxp1 … 로 바뀌는 자리 */
+const CX = Object.assign({ on:false, pos:'back', pages:'all', html:'', imgs:[] }, safeParseObj('la2_cx') || {});
+if(!Array.isArray(CX.imgs)) CX.imgs = [];
+let cxC = { imp:'', css:'', html:'', bs:'', bc:'', bad:0, ext:false };
+const CX_POS_NM = { back:'글 뒤', front:'글 앞' };
+const CX_TPL = [
+  { nm:'액자', pos:'front', html:
+`<style>
+.frame{position:absolute;top:16px;left:16px;right:16px;bottom:16px;
+  border:1.5px solid var(--cx-acc);border-radius:10px;}
+.frame::after{content:"";position:absolute;top:5px;left:5px;right:5px;bottom:5px;
+  border:.5px solid var(--cx-acc);border-radius:7px;opacity:.6;}
+</style>
+<div class="frame"></div>` },
+  { nm:'모서리', pos:'front', html:
+`<style>
+.c{position:absolute;width:38px;height:38px;border:1.5px solid var(--cx-acc);}
+.tl{top:18px;left:18px;border-right:0;border-bottom:0;}
+.br{right:18px;bottom:18px;border-left:0;border-top:0;}
+</style>
+<div class="c tl"></div>
+<div class="c br"></div>` },
+  { nm:'테이프', pos:'front', html:
+`<style>
+.tape{position:absolute;top:10px;left:50%;width:96px;height:24px;margin-left:-48px;
+  background:var(--cx-acc);opacity:.45;transform:rotate(-3deg);}
+</style>
+<div class="tape"></div>` },
+  { nm:'쪽 도장', pos:'front', html:
+`<style>
+.stamp{position:absolute;right:22px;bottom:22px;width:50px;height:50px;
+  border:1.5px solid var(--cx-acc);border-radius:50%;color:var(--cx-acc);
+  display:flex;flex-direction:column;align-items:center;justify-content:center;
+  transform:rotate(-12deg);font:600 7px/1.1 var(--cx-meta-font);letter-spacing:.14em;}
+.stamp b{font-size:17px;letter-spacing:0;}
+</style>
+<div class="stamp"><span>PAGE</span><b>{{page}}</b></div>` },
+  { nm:'공책 줄', pos:'back', html:
+`<style>
+body{background-image:linear-gradient(to bottom,transparent 23px,rgba(0,0,0,.07) 23px,rgba(0,0,0,.07) 24px);
+  background-size:100% 24px;}
+body::before{content:"";position:absolute;top:0;bottom:0;left:30px;width:1px;
+  background:var(--cx-acc);opacity:.45;}
+</style>` },
+  { nm:'워터마크', pos:'back', html:
+`<style>
+body{display:flex;align-items:center;justify-content:center;}
+.wm{font:600 64px/1 var(--cx-title-font);color:var(--cx-ink);opacity:.06;
+  transform:rotate(-24deg);white-space:nowrap;}
+</style>
+<div class="wm">{{title}}</div>` },
+];
+
+/* ---- 코드 정리 ---- */
+function cxSplit(s){
+  const out = []; let d = 0, cur = '', q = '';
+  for(let i = 0; i < s.length; i++){ const ch = s[i];
+    if(q){ cur += ch; if(ch === '\\'){ cur += s[i+1] || ''; i++; } else if(ch === q) q = ''; continue; }
+    if(ch === '"' || ch === "'"){ q = ch; cur += ch; continue; }
+    if(ch === '(' || ch === '[') d++; else if(ch === ')' || ch === ']') d--;
+    if(ch === ',' && !d){ out.push(cur); cur = ''; continue; }
+    cur += ch; }
+  out.push(cur); return out;
+}
+/* .이름 · #이름 → .cx_이름 · #cx_이름 (따옴표·[속성] 안은 그대로) */
+function cxRename(s){
+  let out = '', i = 0, br = 0, q = '';
+  while(i < s.length){ const c = s[i];
+    if(q){ out += c; if(c === '\\'){ out += s[i+1] || ''; i += 2; continue; } if(c === q) q = ''; i++; continue; }
+    if(c === '"' || c === "'"){ q = c; out += c; i++; continue; }
+    if(c === '\\'){ out += c + (s[i+1] || ''); i += 2; continue; }
+    if(c === '[') br++; else if(c === ']') br--;
+    if(!br && (c === '.' || c === '#')){
+      const m = /^-?[_a-zA-Z\u00a0-\uffff][\w\-\u00a0-\uffff]*/.exec(s.slice(i+1));
+      if(m){ out += c + 'cx_' + m[0]; i += 1 + m[0].length; continue; }
+    }
+    out += c; i++; }
+  return out;
+}
+function cxScopeSel(sel){
+  sel = sel.trim(); if(!sel) return '';
+  sel = sel.replace(/^(?:html|:root)(?![\w-])/i, '\u0001');
+  sel = sel.replace(/^(\u0001\s*>?\s*)?body(?![\w-])/i, '\u0002');
+  if(sel.charAt(0) === '\u0002') return CX_MARK + '>.cxb' + sel.slice(1);
+  if(sel.charAt(0) === '\u0001') return CX_MARK + sel.slice(1);
+  if(/^:scope(?![\w-])/i.test(sel)) return CX_MARK + sel.slice(6);
+  return CX_MARK + ' ' + sel;
+}
+function cxUnits(s){
+  return s.replace(/(-?\d*\.?\d+)(?:s|d|l)?(vh|vw|vmin|vmax)\b/gi, (m, n, u) => {
+    u = u.toLowerCase();
+    const ref = u === 'vw' ? 'var(--cx-w)' : u === 'vh' ? 'var(--cx-h)' : u === 'vmin' ? 'min(var(--cx-w), var(--cx-h))' : 'max(var(--cx-w), var(--cx-h))';
+    return 'calc(' + ref + ' * ' + (+n/100) + ')';
+  });
+}
+function cxDecl(s){ return cxUnits(s.replace(/url\(\s*(['"]?)#/g, 'url($1#cx_')); }
+function cxWalk(rules, out){
+  let t = '';
+  for(let i = 0; i < rules.length; i++){
+    const r = rules[i], ct = r.cssText || '', ob = ct.indexOf('{');
+    if(r.type === 3){ if(/^https:\/\//i.test(r.href || '')) out.imps.push(ct); continue; }
+    if(r.type === 1 && r.selectorText != null && ob > 0){
+      const sel = cxSplit(r.selectorText).map(x => cxScopeSel(cxRename(x))).filter(Boolean).join(',');
+      if(sel) t += sel + cxDecl(ct.slice(ob)) + '\n';
+      continue;
+    }
+    if(r.type === 7){ t += ct + '\n'; continue; }
+    if(r.cssRules && ob > 0){ t += ct.slice(0, ob) + '{' + cxWalk(r.cssRules, out) + '}\n'; continue; }
+    t += cxDecl(ct) + '\n';
+  }
+  return t;
+}
+function cxScopeCss(css, out){
+  if(!css.trim()) return '';
+  let rules = null;
+  try {
+    const d = document.implementation.createHTMLDocument('');
+    const s = d.createElement('style'); s.textContent = css; d.head.appendChild(s);
+    rules = s.sheet && s.sheet.cssRules;
+  } catch(e){ rules = null; }
+  if(rules) return cxWalk(rules, out);
+  return css.replace(/@import[^;]*;/g, '')
+    .replace(/(^|[{}])\s*([^{}@]+?)\s*\{/g, (m, a, s) => a + cxSplit(s).map(x => cxScopeSel(cxRename(x))).join(',') + '{');
+}
+function cxAttrEsc(s){ return String(s).replace(/&/g,'&amp;').replace(/"/g,'&quot;'); }
+function cxEsc(s){ return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+function cxCompile(src){
+  const out = { imp:'', css:'', html:'', bs:'', bc:'', bad:0, ext:false, imps:[] };
+  if(!src || !src.trim()) return out;
+  let doc; try { doc = new DOMParser().parseFromString(src, 'text/html'); } catch(e){ return out; }
+  let css = '';
+  doc.querySelectorAll('style').forEach(s => { css += s.textContent + '\n'; s.remove(); });
+  doc.querySelectorAll('link').forEach(l => {
+    const h = l.getAttribute('href') || '';
+    if(/stylesheet/i.test(l.getAttribute('rel') || '') && /^https:\/\//i.test(h)) out.imps.push('@import url("' + h.replace(/["\\]/g,'') + '");');
+    l.remove();
+  });
+  doc.querySelectorAll('script,iframe,frame,frameset,object,embed,applet,base,meta,noscript,template').forEach(e => {
+    if(/^(script|iframe|frame|object|embed|applet)$/i.test(e.tagName)) out.bad++;
+    e.remove();
+  });
+  doc.querySelectorAll('*').forEach(e => {
+    Array.from(e.attributes).forEach(a => {
+      const n = a.name.toLowerCase(), v = a.value;
+      if(/^on/.test(n)){ e.removeAttribute(a.name); out.bad++; return; }
+      if(/^\s*(javascript|vbscript):/i.test(v)){ e.removeAttribute(a.name); out.bad++; return; }
+      let nv = v;
+      if(n === 'class') nv = v.split(/\s+/).filter(Boolean).map(c => 'cx_' + c).join(' ');
+      else if((n === 'id' || n === 'for') && v) nv = 'cx_' + v;
+      else if((n === 'href' || n === 'xlink:href') && /^#./.test(v)) nv = '#cx_' + v.slice(1);
+      else if(n === 'style') nv = cxUnits(v);
+      nv = nv.replace(/url\(\s*(['"]?)#/g, 'url($1#cx_');
+      if(nv !== v) e.setAttribute(a.name, nv);
+    });
+  });
+  const b = doc.body;
+  if(b.querySelector('img[src^="http"],image[href^="http"]') || /url\(\s*['"]?https?:/i.test(css)) out.ext = true;
+  out.bc = cxAttrEsc(b.getAttribute('class') || '');
+  out.bs = cxAttrEsc(b.getAttribute('style') || '');
+  out.html = b.innerHTML;
+  out.css = cxScopeCss(css, out).replace(/<\/style/gi, '<\\/style');
+  out.imp = out.imps.join('\n');
+  return out;
+}
+
+/* ---- 장마다 그리기 ---- */
+function cxActive(){ return !!(CX.on && (cxC.html.trim() || cxC.css.trim() || cxC.bs)); }
+function cxShowOn(i, n){
+  const p = i + 1;
+  if(CX.pages === 'first') return i === 0;
+  if(CX.pages === 'last')  return i === n - 1;
+  if(CX.pages === 'odd')   return p % 2 === 1;
+  if(CX.pages === 'even')  return p % 2 === 0;
+  return true;
+}
+function cxBaseVals(n){
+  const d = new Date(), z = x => String(x).padStart(2,'0');
+  const it = el => (el ? el.innerText : '').replace(/\s*\n\s*/g, ' ').trim();
+  return { title:it(mainTitle), subtitle:it(subTitle), copyright:it(copyBox), head:txt('headText'),
+           pages:n, date:d.getFullYear() + '.' + z(d.getMonth()+1) + '.' + z(d.getDate()) };
+}
+/* {{title}} 같은 자리를 채운다 — HTML이면 글자를 이스케이프, CSS면 문자열용으로 */
+function cxFill(s, mode, v){
+  if(!s || s.indexOf('{{') < 0) return s || '';
+  return s.replace(/\{\{\s*([a-zA-Z]+)\s*(\d*)\s*\}\}/g, (m, k, n) => {
+    k = k.toLowerCase();
+    if(k === 'img') return CX.imgs[(+n || 1) - 1] || '';
+    if(n || !Object.prototype.hasOwnProperty.call(v, k)) return m;
+    const x = String(v[k]);
+    return mode === 'h' ? cxEsc(x) : x.replace(/[\\"']/g, '\\$&');
+  });
+}
+function cxPageHTML(i, v){
+  const sc = '.cxp' + i;
+  const css = cxFill(cxC.css, 'c', v).split(CX_MARK).join(sc);
+  const html = cxFill(cxC.html, 'h', v), bs = cxFill(cxC.bs, 'h', v);
+  return '<div class="cxs cxp' + i + '" style="position:absolute;left:0;top:0;right:0;bottom:0;">' +
+           '<style>' + cxC.imp + '\n' + css + '</style>' +
+           '<div class="cxb' + (cxC.bc ? ' ' + cxC.bc : '') + '" style="position:absolute;left:0;top:0;right:0;bottom:0;' + bs + '">' + html + '</div>' +
+         '</div>';
+}
+function cxSet(el, h){ if(el && el._cxk !== h){ el.innerHTML = h; el._cxk = h; } }
+function makeFxPage(){
+  const p = document.createElement('div'); p.className = 'fx-page';
+  p.innerHTML = '<div class="fx-in"></div>';
+  return p;
+}
+function renderCx(){
+  const fx = $('fxLayer'); if(!fx) return;
+  const n = bgLayer.children.length;
+  while(fx.children.length < n) fx.appendChild(makeFxPage());
+  while(fx.children.length > n) fx.removeChild(fx.lastChild);
+  canvasEl.style.setProperty('--cx-acc', ($('borderColor') && $('borderColor').value) || '#8b7d5e');
+  canvasEl.style.setProperty('--cx-font', ($('fontSel') && $('fontSel').value) || 'inherit');
+  const act = cxActive();
+  const start = parseInt(($('folioStart') || {}).value, 10), s0 = isFinite(start) ? start : 1;
+  const v = act ? cxBaseVals(n) : null;
+  for(let i = 0; i < n; i++){
+    const back = bgLayer.children[i].querySelector('.p-cx');
+    const front = fx.children[i].querySelector('.fx-in');
+    let h = '';
+    if(act && cxShowOn(i, n)){ v.page = s0 + i; h = cxPageHTML(i, v); }
+    cxSet(CX.pos === 'front' ? front : back, h);
+    cxSet(CX.pos === 'front' ? back : front, '');
+  }
+}
+
+/* ---- 저장 · 화면 ---- */
+let cxSaveT = null;
+function saveCx(){
+  clearTimeout(cxSaveT);
+  cxSaveT = setTimeout(() => {
+    if(!LS.set('la2_cx', JSON.stringify(CX))){
+      LS.set('la2_cx', JSON.stringify(Object.assign({}, CX, { imgs:[] })));
+      showToast('저장 공간이 부족해 올린 이미지는 기억하지 못했어요');
+    }
+  }, 300);
+  saveSettings();
+}
+function applyCx(){
+  cxC = cxCompile(CX.html || '');
+  cxMsg(); cxUI(); renderCx(); saveCx();
+}
+function cxMsg(){
+  const m = $('cxMsg'); if(!m) return; const t = [];
+  if(cxC.bad) t.push('스크립트·이벤트 속성 ' + cxC.bad + '개는 빼고 넣었어요. 이미지로 저장되므로 움직이는 코드는 쓰이지 않아요.');
+  if(cxC.ext) t.push('바깥 주소의 이미지는 저장한 그림에서 빠질 수 있어요. [이미지 넣기]로 올리면 확실해요.');
+  m.textContent = t.join(' '); m.style.display = t.length ? 'block' : 'none';
+}
+function cxUI(){
+  const ck = $('cxOn'); if(ck) ck.checked = !!CX.on;
+  document.querySelectorAll('#cxPosSeg button').forEach(b => b.classList.toggle('on', b.dataset.cxpos === CX.pos));
+  document.querySelectorAll('#cxPagesSeg button').forEach(b => b.classList.toggle('on', b.dataset.cxpg === CX.pages));
+  const ta = $('cxCode');
+  if(ta && document.activeElement !== ta && ta.value !== (CX.html || '')) ta.value = CX.html || '';
+  renderCxImgs();
+}
+function setCxOn(v){ CX.on = !!v; applyCx(); }
+function setCxPos(p){ if(!CX_POS_NM[p]) return; CX.pos = p; applyCx(); }
+function setCxPages(g){ if(['all','first','last','odd','even'].indexOf(g) < 0) return; CX.pages = g; applyCx(); }
+function cxSetCode(t){ CX.html = t; const ta = $('cxCode'); if(ta) ta.value = t; }
+function cxInsert(t){
+  const ta = $('cxCode'); if(!ta) return;
+  const a = ta.selectionStart != null ? ta.selectionStart : ta.value.length, b = ta.selectionEnd != null ? ta.selectionEnd : a;
+  ta.value = ta.value.slice(0, a) + t + ta.value.slice(b);
+  try { ta.selectionStart = ta.selectionEnd = a + t.length; } catch(e){}
+  CX.html = ta.value; CX.on = true; applyCx();
+}
+let cxUndo = null;
+function cxClear(){
+  if(!(CX.html || '').trim()) return;
+  cxUndo = CX.html; cxSetCode(''); applyCx();
+  showToast('HTML을 비웠어요 · 실수였다면 [되살리기]를 누르세요');
+  const r = $('cxRestore'); if(r) r.style.display = 'flex';
+}
+function cxRestore(){
+  if(cxUndo == null) return;
+  cxSetCode(cxUndo); cxUndo = null; applyCx();
+  const r = $('cxRestore'); if(r) r.style.display = 'none';
+}
+function useCxTpl(t){
+  if((CX.html || '').trim() && CX.html !== t.html){ cxUndo = CX.html; const r = $('cxRestore'); if(r) r.style.display = 'flex'; }
+  cxSetCode(t.html); CX.pos = t.pos; CX.on = true; applyCx();
+  showToast('‘' + t.nm + '’ 예시를 넣었어요 — 코드를 고쳐 보세요');
+}
+function buildCx(){
+  const box = $('cxTpl'); if(!box) return; box.innerHTML = '';
+  CX_TPL.forEach(t => {
+    const b = document.createElement('button'); b.type = 'button'; b.className = 'btn sm'; b.textContent = t.nm;
+    b.title = CX_POS_NM[t.pos] + ' 자리에 넣어요';
+    b.addEventListener('click', () => useCxTpl(t)); box.appendChild(b);
+  });
+}
+function onCxFile(input){
+  const f = input.files && input.files[0]; input.value = ''; if(!f) return;
+  if(f.size > 800000){ showToast('파일이 너무 커요 (800KB까지)'); return; }
+  const rd = new FileReader();
+  rd.onload = () => {
+    if((CX.html || '').trim()){ cxUndo = CX.html; const r = $('cxRestore'); if(r) r.style.display = 'flex'; }
+    cxSetCode(String(rd.result || '')); CX.on = true; applyCx(); showToast('‘' + f.name + '’ 불러왔어요');
+  };
+  rd.onerror = () => showToast('파일을 읽지 못했어요');
+  rd.readAsText(f);
+}
+function onCxImg(input){
+  const f = input.files && input.files[0]; input.value = ''; if(!f) return;
+  const url = URL.createObjectURL(f), img = new Image();
+  img.onload = () => {
+    URL.revokeObjectURL(url);
+    let w = img.naturalWidth || img.width, h = img.naturalHeight || img.height;
+    if(!w || !h){ showToast('이미지를 읽지 못했어요'); return; }
+    const r = Math.min(1, 1400/Math.max(w,h)); w = Math.max(1, Math.round(w*r)); h = Math.max(1, Math.round(h*r));
+    const cv = document.createElement('canvas'); cv.width = w; cv.height = h; cv.getContext('2d').drawImage(img, 0, 0, w, h);
+    /* 투명 배경이 있을 수 있는 형식(스티커 등)은 PNG로 둔다 */
+    const alpha = /png|webp|gif|svg/i.test(f.type || '');
+    let d; try { d = alpha ? cv.toDataURL('image/png') : cv.toDataURL('image/jpeg', .88); } catch(e){ showToast('이미지를 사용할 수 없어요'); return; }
+    CX.imgs = CX.imgs.concat([d]);
+    cxInsert('<img src="{{img' + CX.imgs.length + '}}" style="width:' + Math.min(Math.round(w/4), 140) + 'px">');
+  };
+  img.onerror = () => { URL.revokeObjectURL(url); showToast('이미지를 불러오지 못했어요'); };
+  img.src = url;
+}
+function renderCxImgs(){
+  const w = $('cxImgs'), wrap = $('cxImgWrap'); if(!w || !wrap) return;
+  w.innerHTML = ''; let any = false;
+  CX.imgs.forEach((u, i) => {
+    if(!u) return; any = true;
+    const b = document.createElement('div'); b.className = 'cx-chip'; b.setAttribute('role','button'); b.tabIndex = 0;
+    b.title = '눌러서 코드의 커서 자리에 넣기';
+    const t = document.createElement('span'); t.className = 'cx-th'; t.style.backgroundImage = 'url("' + u + '")';
+    const n = document.createElement('span'); n.className = 'nm'; n.textContent = '{{img' + (i+1) + '}}';
+    const x = document.createElement('span'); x.className = 'x'; x.textContent = '×'; x.title = '이미지 지우기';
+    x.addEventListener('click', e => { e.stopPropagation();
+      const a = CX.imgs.slice(); a[i] = ''; while(a.length && !a[a.length-1]) a.pop(); CX.imgs = a; applyCx(); });
+    b.appendChild(t); b.appendChild(n); b.appendChild(x);
+    const ins = () => cxInsert('{{img' + (i+1) + '}}');
+    b.addEventListener('click', ins);
+    b.addEventListener('keydown', e => { if(e.key === 'Enter' || e.key === ' '){ e.preventDefault(); ins(); } });
+    w.appendChild(b);
+  });
+  wrap.style.display = any ? 'flex' : 'none';
+}
+
+/* ---- 내 HTML ---- */
+let myCx = safeParseArr('la2_cxlib', []);
+function saveCxLib(){
+  const html = CX.html || '';
+  if(!html.trim()){ showToast('저장할 HTML이 없어요'); return; }
+  const inp = $('cxName');
+  const nm = ((inp && inp.value.trim()) || ('HTML ' + (myCx.length + 1))).slice(0, 20);
+  const it = { nm, html, pos:CX.pos, pages:CX.pages, imgs:CX.imgs.slice() };
+  myCx = myCx.filter(x => x.nm !== nm); myCx.unshift(it); if(myCx.length > 20) myCx.pop();
+  let ok = LS.set('la2_cxlib', JSON.stringify(myCx));
+  if(!ok && it.imgs.length){ it.imgs = []; ok = LS.set('la2_cxlib', JSON.stringify(myCx)); if(ok) showToast('이미지는 용량이 커서 빼고 저장했어요'); }
+  if(!ok){ myCx.shift(); showToast('저장 공간이 부족해 저장하지 못했어요'); return; }
+  if(inp) inp.value = '';
+  renderCxLib(); if(ok) showToast('‘' + nm + '’ 저장했어요 ✓');
+}
+function useCxLib(it){
+  if((CX.html || '').trim() && CX.html !== it.html){ cxUndo = CX.html; const r = $('cxRestore'); if(r) r.style.display = 'flex'; }
+  cxSetCode(it.html || '');
+  CX.pos = CX_POS_NM[it.pos] ? it.pos : 'back';
+  CX.pages = ['all','first','last','odd','even'].indexOf(it.pages) >= 0 ? it.pages : 'all';
+  if(Array.isArray(it.imgs) && it.imgs.length) CX.imgs = it.imgs.slice();
+  CX.on = true; applyCx(); showToast('‘' + it.nm + '’ 불러왔어요');
+}
+function renderCxLib(){
+  const list = $('cxLib'); if(!list) return; list.innerHTML = '';
+  if(!myCx.length){ const e = document.createElement('p'); e.className = 'hint'; e.textContent = '저장한 HTML이 없어요.'; list.appendChild(e); return; }
+  myCx.forEach((it, i) => {
+    const b = document.createElement('button'); b.type = 'button'; b.className = 'cx-chip';
+    b.title = (CX_POS_NM[it.pos] || '') + ' · 눌러서 불러오기';
+    const n = document.createElement('span'); n.className = 'nm'; n.textContent = it.nm;
+    const x = document.createElement('span'); x.className = 'x'; x.textContent = '×'; x.title = '지우기';
+    x.addEventListener('click', e => { e.stopPropagation();
+      if(!confirm('‘' + it.nm + '’을(를) 지울까요?')) return;
+      myCx.splice(i, 1); LS.set('la2_cxlib', JSON.stringify(myCx)); renderCxLib(); });
+    b.appendChild(n); b.appendChild(x);
+    b.addEventListener('click', () => useCxLib(it));
+    list.appendChild(b);
+  });
+}
+
+/* 설정 파일·불러오기에서 온 값 */
+function cxFromState(o){
+  if(!o || typeof o !== 'object') return;
+  if(typeof o.html === 'string') CX.html = o.html;
+  if(typeof o.on === 'boolean') CX.on = o.on;
+  if(CX_POS_NM[o.pos]) CX.pos = o.pos;
+  if(['all','first','last','odd','even'].indexOf(o.pages) >= 0) CX.pages = o.pages;
+  cxC = cxCompile(CX.html || ''); cxMsg(); cxUI(); renderCx();
+  clearTimeout(cxSaveT); cxSaveT = setTimeout(() => LS.set('la2_cx', JSON.stringify(CX)), 300);
+}
+function cxInit(){
+  if(!CX_POS_NM[CX.pos]) CX.pos = 'back';
+  if(['all','first','last','odd','even'].indexOf(CX.pages) < 0) CX.pages = 'all';
+  if(typeof CX.html !== 'string') CX.html = '';
+  buildCx(); renderCxLib();
+  cxC = cxCompile(CX.html); cxMsg(); cxUI(); renderCx();
+
+  const ta = $('cxCode');
+  if(ta){
+    ta.addEventListener('input', () => { clearTimeout(ta._t); ta._t = setTimeout(() => { CX.html = ta.value; applyCx(); }, 280); });
+    ta.addEventListener('blur', () => { if(ta._t){ clearTimeout(ta._t); ta._t = null; if(CX.html !== ta.value){ CX.html = ta.value; applyCx(); } } });
+    ta.addEventListener('keydown', e => {
+      if(e.key !== 'Tab' || e.shiftKey || e.ctrlKey || e.metaKey || e.altKey) return;
+      e.preventDefault();
+      const a = ta.selectionStart, b = ta.selectionEnd;
+      if(ta.setRangeText) ta.setRangeText('  ', a, b, 'end'); else ta.value = ta.value.slice(0, a) + '  ' + ta.value.slice(b);
+      ta.dispatchEvent(new Event('input'));
+    });
+  }
+  /* 제목·부제·하단 문구가 바뀌면 {{title}} 같은 자리도 다시 채운다 */
+  let t = null;
+  const later = () => { clearTimeout(t); t = setTimeout(renderCx, 200); };
+  [mainTitle, subTitle, copyBox].forEach(el => el && el.addEventListener('input', later));
+  ['fontSel','borderColor','folioStart'].forEach(id => { const el = $(id); if(el){ el.addEventListener('change', later); el.addEventListener('input', later); } });
+}
+
+/* ============================================================
    18. 단축키 · 시작
    ============================================================ */
 function bindShortcuts(){
@@ -3234,6 +3789,7 @@ window.onload = () => {
 
   /* 새로고침하면 본문은 비어 있는 상태로 시작한다. 남기려면 [저장]을 눌러야 함 */
   loadSettings();
+  cxInit();
 
   if(window.innerWidth < 1100) sidebar.classList.add('collapsed');
 
