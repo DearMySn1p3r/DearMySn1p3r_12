@@ -70,6 +70,9 @@
   --meta-font:'Pretendard',sans-serif;
   --title-size:1.35rem;
   --sub-size:0.62rem;
+  --sub-gap:9px;           /* 제목과 부제 사이 */
+  --sub-track:.26em;       /* 부제 자간 */
+  --sub-case:uppercase;    /* 부제 영문 대문자 */
   --copy-size:0.56rem;
   --title-track:0px;
   --tline-w:1px;
@@ -402,9 +405,9 @@ body.is-exporting .p-guide,body:not(.show-guide) .p-guide{display:none}
 .ts-barbold .tb-bar{display:block;width:36px;height:max(3px,calc(var(--tline-w) * 3))}
 
 
-.sub-below .sub-title{margin-top:9px}
-.sub-above .sub-title{order:-1;margin:0 0 9px;letter-spacing:.26em;text-transform:uppercase;
-  font-size:calc(var(--sub-size) * .95);opacity:.95}
+.sub-below .sub-title{margin-top:var(--sub-gap)}
+/* 위·아래 어디에 두어도 글씨 모양은 같게 — 거리만 방향이 바뀐다 */
+.sub-above .sub-title{order:-1;margin:0 0 var(--sub-gap)}
 
 .title-box.no-line .tb-rule,.title-box.no-line .tb-flank,.title-box.no-line .tb-bar{display:none}
 .title-box.no-line .main-title{border-bottom-color:transparent}
@@ -412,7 +415,7 @@ body.is-exporting .p-guide,body:not(.show-guide) .p-guide{display:none}
 .main-title.text-off::before{content:none !important}
 .sub-title{
   display:block;font-family:var(--meta-font);font-size:var(--sub-size);
-  color:var(--meta-sub-color,var(--txt-2));outline:none;font-weight:400;letter-spacing:.01em;
+  color:var(--meta-sub-color,var(--txt-2));outline:none;font-weight:400;letter-spacing:var(--sub-track);text-transform:var(--sub-case);
   width:100%;max-width:var(--meta-line-w);margin:0 auto;text-align:var(--meta-align) !important;transition:color .3s;
 }
 .copyright-box{
@@ -1063,6 +1066,12 @@ body:not(.is-exporting) .editor span[style*="background-color"]:not([style*="bac
             <input type="range" id="rTitleGap" min="0" max="140" step="1" value="22" data-css="--title-gap" data-unit="px" data-act="cover pages"></div>
           <div class="sl"><span class="lbl">부제 크기</span><span class="val" id="vSubSize">0.62rem</span>
             <input type="range" id="rSubSize" min="0.4" max="1.8" step="0.05" value="0.62" data-css="--sub-size" data-unit="rem" data-act="cover"></div>
+          <div class="sl"><span class="lbl">제목과 부제 사이</span><span class="val" id="vSubGap">9px</span>
+            <input type="range" id="rSubGap" min="0" max="80" step="1" value="9" data-css="--sub-gap" data-unit="px" data-act="cover pages"></div>
+          <div class="sl"><span class="lbl">부제 자간</span><span class="val" id="vSubTrack">0.26em</span>
+            <input type="range" id="rSubTrack" min="-0.05" max="0.6" step="0.01" value="0.26" data-css="--sub-track" data-unit="em" data-act="cover"></div>
+          <div class="trow"><span>부제 영문 대문자로</span>
+            <label class="switch"><input type="checkbox" id="chkSubUpper" checked onchange="applySubCase();applyCoverSpace();schedulePages();saveSettings()"><span class="slider"></span></label></div>
           <div class="fld">
             <label>제목·부제 정렬</label>
             <div class="seg" id="metaAlignSeg">
@@ -2706,6 +2715,7 @@ function deleteFav(type, color){
 function updateTypo(){ editor.style.fontFamily = $('fontSel').value; saveSettings(); schedulePages(); }
 const TITLE_STYLES = ['rules','underline','flank','bar','barbold','plain'];
 let curSubPos = 'above';
+function applySubCase(){ root.style.setProperty('--sub-case', on('chkSubUpper') ? 'uppercase' : 'none'); }
 function applySubPosQuiet(){
   const box = $('title-box');
   box.classList.toggle('sub-above', curSubPos === 'above');
@@ -2756,7 +2766,7 @@ const BASE = {
   chkBorder:false, borderColor:'#8b7d5e', rBorderInset:18, rBorderW:1,
   chkFrame:false, rFramePad:30, fTop:'#f4f4f5', fBot:'#f4f4f5',
   chkTitle:true, chkMainTitle:true, chkTitleLine:true, chkSub:true,
-  rTitleTop:0, rTitleSize:1.35, rTitleTrack:0, rTitleGap:22, rSubSize:0.62, rTLineW:1,
+  rTitleTop:0, rTitleSize:1.35, rTitleTrack:0, rTitleGap:22, rSubSize:0.62, rSubGap:9, rSubTrack:0.26, chkSubUpper:true, rTLineW:1,
   mtColor:'#1f1f22', msColor:'#9a9aa2', tlColor:'#c7c7cc',
   chkCopy:true, rCopySize:0.56, rCopySide:0, rCopyBottom:16, cpColor:'#9a9aa2',
   chkCover:false, rCoverH:190, rCoverTop:30, rCoverSide:30, rCoverGap:26, rCoverRadius:0,
@@ -2971,6 +2981,7 @@ function refreshAll(){
   root.style.setProperty('--meta-font', $('metaFont').value);
   applyTitleStyleQuiet();
   applySubPosQuiet();
+  applySubCase();
   root.style.setProperty('--ed-align', curAlign);
   root.style.setProperty('--meta-align', curMetaAlign);
   root.style.setProperty('--copy-align', curCopyAlign);
