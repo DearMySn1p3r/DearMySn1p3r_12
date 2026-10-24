@@ -43,6 +43,7 @@
   --title-top:0px;         /* 제목 위에 더 비우는 여백 (첫 장만) */
   --pad-top:34px;          /* 본문 위 여백 */
   --copy-space:45px;       /* 본문 아래 확보 공간 */
+  --pad-bottom:0px;        /* 본문 아래에 더 비우는 여백 */
   --title-space-extra:80px;/* 첫 단 위쪽에 비워두는 높이 (JS 계산) */
   --page-radius:0px;
 
@@ -329,7 +330,7 @@ body.is-exporting .page-bg{box-shadow:none}
 .p-guide{
   position:absolute;pointer-events:none;
   border:1px dashed rgba(120,120,160,.42);
-  top:var(--pad-top);bottom:var(--copy-space);left:var(--pad-x);right:var(--pad-x);
+  top:var(--pad-top);bottom:calc(var(--copy-space) + var(--pad-bottom));left:var(--pad-x);right:var(--pad-x);
 }
 body.is-exporting .p-guide,body:not(.show-guide) .p-guide{display:none}
 
@@ -467,7 +468,7 @@ body.is-exporting .vt-main.ph,body.clean .vt-main.ph{display:none}
 
 /* ---- 본문 에디터 ---- */
 .editor{
-  height:calc(var(--ph) - (var(--frame-pad) * 2) - var(--pad-top) - var(--copy-space));
+  height:calc(var(--ph) - (var(--frame-pad) * 2) - var(--pad-top) - var(--copy-space) - var(--pad-bottom));
   width:calc(var(--pw) - (var(--frame-pad) * 2) - (var(--pad-x) * 2) - var(--ed-extra-left) - var(--ed-extra-right));
   margin-top:calc(var(--frame-pad) + var(--pad-top));
   margin-left:calc(var(--frame-pad) + var(--pad-x) + var(--ed-extra-left));
@@ -770,6 +771,8 @@ body:not(.is-exporting) .editor span[style*="background-color"]:not([style*="bac
             <input type="range" id="rPadX" min="8" max="140" step="1" value="42" data-css="--pad-x" data-unit="px" data-act="pages"></div>
           <div class="sl"><span class="lbl">위 여백</span><span class="val" id="vPadTop">34px</span>
             <input type="range" id="rPadTop" min="8" max="160" step="1" value="34" data-css="--pad-top" data-unit="px" data-act="pages cover"></div>
+          <div class="sl"><span class="lbl">아래 여백 <em style="font-style:normal;opacity:.7">· 본문이 끝나는 곳</em></span><span class="val" id="vPadBottom">0px</span>
+            <input type="range" id="rPadBottom" min="0" max="240" step="1" value="0" data-css="--pad-bottom" data-unit="px" data-act="pages cover"></div>
           <div class="sl"><span class="lbl">모서리 둥글기</span><span class="val" id="vPageRadius">0px</span>
             <input type="range" id="rPageRadius" min="0" max="40" step="1" value="0" data-css="--page-radius" data-unit="px"></div>
           <div class="trow">
@@ -2755,7 +2758,7 @@ const BASE = {
   titleFont:"'Song Myung', serif",
   metaFont:"'Pretendard', sans-serif",
   rSize:10.5, rTrack:-0.3, rLead:1.8, rIndent:1, rParaGap:0,
-  rPadX:42, rPadTop:34, rPageRadius:0, chkGuide:false,
+  rPadX:42, rPadTop:34, rPadBottom:0, rPageRadius:0, chkGuide:false,
   pTop:'#ffffff', pBot:'#ffffff',
   rPhotoZoom:100, rPhotoX:50, rPhotoY:50, rPhotoOp:100, rPhotoBlur:0, rPhotoGray:0, rPhotoBright:100,
   chkTint:false, tintTop:'#ffffff', tintBot:'#ffffff', rTintOp:72,
